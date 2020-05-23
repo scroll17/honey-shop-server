@@ -4,9 +4,9 @@
   "main": "build/index.js",
   "private": true,
   "scripts": {
-    "tsc": "server/node_modules/.bin/tsc",
-    "dev": "server/node_modules/.bin/ts-node-dev --respawn --transpileOnly src/index.ts",
-    "prod": "server/node_modules/.bin/tsc && node ./build/index.js",
+    "tsc": "./node_modules/.bin/tsc",
+    "dev": "./node_modules/.bin/ts-node-dev --respawn --transpileOnly src/index.ts",
+    "prod": "./node_modules/.bin/tsc && node ./build/index.js",
     "uninstall-lefthook": "npx lefthook uninstall && npm uninstall @arkweid/lefthook"
   },
   "devDependencies": {
