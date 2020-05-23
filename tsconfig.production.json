@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig",
+  "compilerOptions": {
+    "incremental": false,
+    "sourceMap": true,
+    "inlineSources": true,
+    "removeComments": true,
+    "sourceRoot": "/"
+  }
+}

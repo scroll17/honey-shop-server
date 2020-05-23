@@ -1,0 +1,14 @@
+# Migration from husky + lint-staged
+# https://github.com/Arkweid/lefthook/wiki/Migration-from-husky-with-lint-staged
+pre-commit:
+  parallel: true
+  commands:
+    audit:
+      run: "npm audit"
+    lint:
+      glob: "*.{js,ts}"
+      exclude: "./migration/**"
+      run: "prettier --write {staged_files} && eslint --fix {staged_files} && git add {staged_files}"
+    typecheck:
+      glob: "*.{js,ts,json}"
+      run: "tsc --project tsconfig.production.json --noEmit"

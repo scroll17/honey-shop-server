@@ -2,8 +2,8 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   extends: ['plugin:@typescript-eslint/recommended'],
   parserOptions: {
-    ecmaVersion: 2017,
-    sourceType: 'module'
+    ecmaVersion: 2019,
+    sourceType: 'module',
   },
   rules: {
     'no-return-await': ['error'],
@@ -23,10 +23,7 @@ module.exports = {
     '@typescript-eslint/prefer-interface': 'off',
     '@typescript-eslint/no-parameter-properties': 'off',
     '@typescript-eslint/no-namespace': 'off',
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      { ignoreRestSiblings: true }
-    ],
-    '@typescript-eslint/no-empty-function': 'off'
-  }
+    '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    '@typescript-eslint/no-empty-function': 'off',
+  },
 };
