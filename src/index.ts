@@ -1,36 +1,60 @@
 /* external modules */
-import http from 'http';
-import _ from 'lodash';
-/* app */
-import app from './app';
+import cluster from 'cluster';
+import path from 'path';
+import os from 'os';
 /* other */
 import logger from './logger';
 
-const server = http.createServer(app).listen(app.get('port'), app.get('host'));
+const nodeEnv = process.env.NODE_ENV;
+const numCPUs = nodeEnv === 'production' ? os.cpus().length : 1; // start only 1 instance for development mode
 
-server.on('error', (error) => {
-  if (_.get(error, 'syscall') !== 'listen') throw error;
+logger.debug(`Master "${process.pid}" is running`);
 
-  const port = app.get('port');
-  const bind = _.isString(port) ? `Pipe ${port}` : `Port ${port}`;
+// TODO: configure for https when available ssl certs
+cluster.setupMaster({
+  exec: path.join(__dirname, './worker.js'),
+  // args: ['--use', 'http']
+  // silent: true
+});
 
-  // handle specific listen errors with friendly messages
-  switch (_.get(error, 'code')) {
-    case 'EACCES':
-      logger.error(`${bind} requires elevated privileges.`);
-      process.exit(1);
+// Fork workers.
+for (let i = 0; i < numCPUs; i++) {
+  cluster.fork();
+}
+
+cluster.on('message', (worker, workerData) => {
+  switch (workerData.type) {
+    case 'shutdown':
+      {
+        cluster.disconnect(() => {
+          process.exit(workerData.code);
+        });
+      }
       break;
-    case 'EADDRINUSE':
-      logger.error(`${bind} is already in use.`);
-      process.exit(1);
-      break;
-    default:
-      throw error;
+    default: {
+      logger.debug('Master process receive: ', workerData);
+    }
   }
 });
-server.on('listening', () => {
-  const addr = server.address();
-  const bind = _.isString(addr) ? `pipe ${addr}` : `port ${addr!.port}`;
 
-  logger.info('Listening on ' + bind);
+cluster.on('disconnect', (worker) => {
+  logger.debug(`Worker ${worker.id} disconnected`);
 });
+
+cluster.on('exit', (worker) => {
+  // Replace the dead worker
+  if (worker.exitedAfterDisconnect) {
+    logger.debug(`Worker ${worker.id} exited`);
+  } else {
+    logger.debug(`Worker ${worker.id} died :( and new one re-spawned`);
+    cluster.fork();
+  }
+});
+
+logger.info(`
+  ----------------------------------
+        Starting WEB Server . . .
+        Environment: "${nodeEnv}"
+        Cluster count: "${numCPUs}"
+  ----------------------------------
+`);
