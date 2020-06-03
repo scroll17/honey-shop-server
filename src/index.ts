@@ -6,15 +6,12 @@ import os from 'os';
 import logger from './logger';
 
 const nodeEnv = process.env.NODE_ENV;
-const numCPUs = nodeEnv === 'production' ? os.cpus().length : 1; // start only 1 instance for development mode
+const numCPUs = nodeEnv === 'production' ? os.cpus().length : 1;
 
 logger.debug(`Master "${process.pid}" is running`);
 
-// TODO: configure for https when available ssl certs
 cluster.setupMaster({
   exec: path.join(__dirname, './worker.js'),
-  // args: ['--use', 'http']
-  // silent: true
 });
 
 // Fork workers.
