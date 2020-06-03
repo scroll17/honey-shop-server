@@ -2,7 +2,7 @@ import path from 'path';
 
 export default {
   name: 'production',
-  secretsPath: path.join(__dirname, 'secrets.json'),
+  secretsPath: path.join(__dirname, 'honey-secrets.json'),
 
   logger: {
     level: 'all', // TODO

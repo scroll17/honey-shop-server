@@ -12,7 +12,7 @@ export function getSecrets(path: string): AppSecrets {
   _.forEach(REQUIRED_SECRETS, (value, key) => {
     if (value) {
       const secret = secrets[key];
-      if (secret == null) {
+      if (_.isNil(secret)) {
         throw new Error(`Secret '${key}' does not exists. Please add it to ${path}`);
       }
     } else {

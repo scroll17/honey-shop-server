@@ -4,7 +4,6 @@ import nocache from 'nocache';
 
 export default (app: express.Application): void => {
   //app.use(helmet.contentSecurityPolicy()) // https://github.com/helmetjs/csp
-  app.use(helmet.hidePoweredBy()); // https://github.com/helmetjs/hide-powered-by
   app.use(helmet.hsts()); // https://github.com/helmetjs/hsts
   app.use(helmet.ieNoOpen()); // https://github.com/helmetjs/ienoopen
   app.use(helmet.frameguard()); // https://github.com/helmetjs/frameguard

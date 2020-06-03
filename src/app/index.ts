@@ -1,21 +1,21 @@
 /* external modules */
-import path from 'path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
 /* other */
 import { config } from '../config';
-import helmetProtection from './helmet-protection';
 import { expressLogger } from '../logger';
+import helmetProtection from './helmet-protection';
 
 const app: express.Application = express();
 
-app.set('port', process.env.PORT || config.http.port);
-app.set('trust proxy', ['loopback', 'uniquelocal']);
+app.set('port', config.http.port);
+app.set('trust proxy', config.http.trustProxy);
+
+app.disable('x-powered-by');
 
 app.use(bodyParser.json());
-
-app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
+app.use('/public', express.static(config.publicPath, { maxAge: '7d' }));
 app.use(expressLogger);
 
 helmetProtection(app);

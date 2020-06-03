@@ -3,14 +3,16 @@ import querystring, { ParsedUrlQueryInput } from 'querystring';
 import _ from 'lodash';
 /*other*/
 import { getSecrets, AppSecrets } from './secrets';
-import devConfig from './development.js';
+import devConfig from './development';
 import proConfig from './production';
-import testConfig from './test.js';
+import testConfig from './test';
 import defaultConfig from './default';
 
 export interface AppConfig {
   name: string;
+
   secretsPath: string;
+  publicPath: string;
 
   logger: {
     level: string;
@@ -31,10 +33,10 @@ export interface AppConfig {
   };
 
   http: {
-    port: number;
+    port: number | string;
     host: string;
     client: string;
-    //trustProxy: [],
+    trustProxy: string[];
     cookiesConf: {
       httpOnly: boolean;
       signed: boolean;

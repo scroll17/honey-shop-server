@@ -1,4 +1,8 @@
+import path from 'path';
+
 export default {
+  publicPath: path.join(__dirname, '../../', 'public'),
+
   logger: {
     level: 'all',
   },
@@ -14,7 +18,7 @@ export default {
   },
 
   http: {
-    port: 3001,
+    port: process.env.PORT || 3001,
     cookiesConf: {
       httpOnly: true,
       signed: true,

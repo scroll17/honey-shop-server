@@ -8,7 +8,7 @@
     "tsc": "tsc",
     "dev": "NODE_ENV=development ts-node-dev --respawn --transpileOnly src/worker.ts",
     "prod-pm2": "tsc && pm2 start ./dist/worker.js --name honey-shop-server",
-    "prod-cluster": "tsc && node ./dist/index.js",
+    "prod-cluster": "NODE_ENV=production tsc && node ./dist/index.js",
     "uninstall-lefthook": "npx lefthook uninstall && npm uninstall @arkweid/lefthook"
   },
   "devDependencies": {

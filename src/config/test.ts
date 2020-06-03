@@ -1,13 +1,14 @@
 import path from 'path';
 import _ from 'lodash';
+import defaultConfig from './default';
 
 export default {
   name: 'test',
-  secretsPath: path.join(__dirname, 'secrets.json'),
+  secretsPath: path.join(__dirname, 'honey-secrets.json'),
 
   http: {
-    host: 'http://localhost:3001',
-    client: 'http://localhost:4000',
+    host: `http://localhost:${defaultConfig.http.port}`,
+    client: `http://localhost:${4100}`,
   },
 
   logger: {
