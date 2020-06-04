@@ -1,13 +1,27 @@
 import log4js from 'log4js';
+import moment from 'moment';
 
-const isDev = process.env.NODE_ENV === 'development';
+import { config } from './config';
 
 log4js.addLayout('json', (config) => (logEvent) => {
+  const data = logEvent.data.map((data) => {
+    if (data instanceof Error) {
+      return {
+        name: data.name,
+        stack: data.stack,
+        message: data.message,
+      };
+    } else {
+      return data;
+    }
+  });
+
   const customEvent = {
-    startTime: logEvent.startTime,
     level: logEvent.level.levelStr,
-    data: logEvent.data,
+    time: moment(logEvent.startTime).format('HH:mm:ss'),
+    data,
   };
+
   return JSON.stringify(customEvent) + config.separator;
 });
 
@@ -20,13 +34,10 @@ log4js.configure({
         pattern: '[%[%p%]] %r %[=>%] %m',
       },
     },
-    'text-file': {
+    file: {
+      level: 'error',
       type: 'file',
-      filename: 'text.log',
-    },
-    'json-file': {
-      type: 'file',
-      filename: 'app.log',
+      filename: config.logger.filePath,
       layout: {
         type: 'json',
         separator: ',',
@@ -34,30 +45,23 @@ log4js.configure({
     },
   },
   categories: {
-    'text-file': {
-      appenders: ['text-file'],
-      level: 'all',
-    },
-    'json-file': {
-      appenders: ['json-file'],
-      level: isDev ? 'all' : 'error',
+    file: {
+      appenders: ['file'],
+      level: config.logger.level,
     },
     default: {
-      appenders: ['console'],
-      level: 'all', //TODO
+      appenders: ['console', 'file'],
+      level: config.logger.level,
     },
   },
 });
 
 const logger = log4js.getLogger();
 
-const textLogger = log4js.getLogger('text-file');
-const jsonLogger = log4js.getLogger('json-file');
-
 const expressLogger = log4js.connectLogger(logger, {
-  level: 'info',
+  level: 'debug',
   format: (req, res, format) => format(`":method :url" :status ${JSON.stringify(req.body) || ''}`),
 });
 
 export default logger;
-export { jsonLogger as fileLogger, textLogger, expressLogger };
+export { expressLogger };

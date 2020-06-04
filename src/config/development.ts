@@ -10,10 +10,6 @@ export default {
     client: `http://localhost:${4100}`,
   },
 
-  logger: {
-    level: '', //TODO
-  },
-
   postgres: {
     disableDrop: false, // TODO _?
     database: 'honey-shop',

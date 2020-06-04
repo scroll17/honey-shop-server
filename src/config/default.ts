@@ -1,10 +1,12 @@
 import path from 'path';
+import moment from 'moment';
 
 export default {
-  publicPath: path.join(__dirname, '../../', 'public'),
+  publicPath: path.resolve(__dirname, '../../', 'public'),
 
   logger: {
     level: 'all',
+    filePath: path.resolve(__dirname, '../../logs', moment().format('DD-MM-YYYY') + '.log'),
   },
 
   postgres: {

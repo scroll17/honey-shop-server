@@ -5,7 +5,7 @@ export default {
   secretsPath: path.join(__dirname, 'honey-secrets.json'),
 
   logger: {
-    level: 'all', // TODO
+    level: ['error', 'fatal', 'warn'],
   },
 
   http: {

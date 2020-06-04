@@ -16,6 +16,7 @@ export interface AppConfig {
 
   logger: {
     level: string;
+    filePath: string;
   };
 
   postgres: {
