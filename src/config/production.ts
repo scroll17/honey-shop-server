@@ -6,6 +6,7 @@ export default {
 
   logger: {
     level: ['error', 'fatal', 'warn'],
+    useConsole: false,
   },
 
   http: {

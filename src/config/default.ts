@@ -7,6 +7,7 @@ export default {
   logger: {
     level: 'all',
     filePath: path.resolve(__dirname, '../../logs', moment().format('DD-MM-YYYY') + '.log'),
+    useConsole: true,
   },
 
   postgres: {

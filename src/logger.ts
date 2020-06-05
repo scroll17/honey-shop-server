@@ -50,7 +50,7 @@ log4js.configure({
       level: config.logger.level,
     },
     default: {
-      appenders: ['console', 'file'],
+      appenders: config.logger.useConsole ? ['console', 'file'] : ['file'],
       level: config.logger.level,
     },
   },
