@@ -3,10 +3,10 @@ import cluster from 'cluster';
 import path from 'path';
 import os from 'os';
 /* other */
+import { config } from './config';
 import logger from './logger';
 
-const nodeEnv = process.env.NODE_ENV;
-const numCPUs = nodeEnv === 'production' ? os.cpus().length : 1;
+const numCPUs = config.name === 'production' ? os.cpus().length : 1;
 
 logger.debug(`Master "${process.pid}" is running`);
 
@@ -52,7 +52,7 @@ cluster.on('exit', (worker) => {
 logger.info(`
   ----------------------------------
         Starting WEB Server . . .
-        Environment: "${nodeEnv}"
+        Environment: "${config.name}"
         Cluster count: "${numCPUs}"
   ----------------------------------
 `);

@@ -1,0 +1,4 @@
+#! /usr/bin/env sh
+
+npm run build/prod
+cp ./src/config/honey-secrets.json ./dist/config

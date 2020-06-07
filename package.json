@@ -6,9 +6,10 @@
   "private": true,
   "scripts": {
     "tsc": "tsc",
-    "dev": "NODE_ENV=development ts-node-dev --respawn --transpileOnly src/worker.ts",
-    "prod-pm2": "tsc && pm2 start ./dist/worker.js --name honey-shop-server",
-    "prod-cluster": "NODE_ENV=production tsc && node ./dist/index.js",
+    "run/dev": "NODE_ENV=development ts-node-dev --respawn --transpileOnly src/worker.ts",
+    "run/prod-pm2": "tsc && pm2 start ./dist/worker.js --name honey-shop-server",
+    "run/prod-cluster": "NODE_ENV=production tsc -p tsconfig.production.json && node ./dist/index.js",
+    "build/prod": "NODE_ENV=production tsc -p tsconfig.production.json",
     "uninstall-lefthook": "npx lefthook uninstall && npm uninstall @arkweid/lefthook"
   },
   "devDependencies": {
@@ -22,6 +23,7 @@
     "@types/moment": "^2.13.0",
     "@typescript-eslint/eslint-plugin": "^3.0.0",
     "@typescript-eslint/parser": "^3.0.0",
+    "@types/csurf": "^1.9.36",
     "eslint": "^7.1.0",
     "mocha": "^7.2.0",
     "prettier": "^2.0.5",
@@ -29,13 +31,14 @@
     "typescript": "<3.8.0"
   },
   "dependencies": {
-    "moment": "^2.26.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
+    "csurf": "^1.11.0",
     "express": "~4.16.1",
     "helmet": "^3.22.0",
     "lodash": "^4.17.15",
     "log4js": "^6.2.1",
+    "moment": "^2.26.0",
     "nocache": "^2.1.0"
   }
 }

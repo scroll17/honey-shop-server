@@ -5,7 +5,8 @@ import * as bodyParser from 'body-parser';
 /* other */
 import { config } from '../config';
 import { expressLogger } from '../logger';
-import helmetProtection from './helmet-protection';
+import helmetProtection from './middleware/protection';
+import errorHandlers from './middleware/errorHandlers';
 
 const app: express.Application = express();
 
@@ -14,13 +15,14 @@ app.set('trust proxy', config.http.trustProxy);
 
 app.disable('x-powered-by');
 
-app.use(bodyParser.json());
 app.use('/public', express.static(config.publicPath, { maxAge: '7d' }));
+
 app.use(expressLogger);
 
-helmetProtection(app);
-
+app.use(bodyParser.json());
 app.use(cookieParser(config.secrets.cookieSecret));
+
+helmetProtection(app);
 
 // app.use((req, res) => {
 //   res.cookie('access_token', 'Bearer ' + 'token', {
@@ -29,7 +31,13 @@ app.use(cookieParser(config.secrets.cookieSecret));
 // })
 
 app.get('/', (req, res) => {
-  res.send({ Y2: 'hello world!!!' });
+  res.send({ csrfToken: req.csrfToken() });
 });
+
+app.post('/', (req, res) => {
+  res.send({ type: 'post' });
+});
+
+app.use(errorHandlers);
 
 export default app;

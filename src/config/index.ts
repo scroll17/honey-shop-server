@@ -43,6 +43,14 @@ export interface AppConfig {
       httpOnly: boolean;
       signed: boolean;
       domain: string;
+      sameSite: boolean;
+    };
+    csrf: {
+      key: string;
+      maxAge: number;
+      httpOnly: boolean;
+      sameSite: boolean;
+      domain: string;
     };
   };
 }

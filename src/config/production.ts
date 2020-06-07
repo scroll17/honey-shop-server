@@ -14,6 +14,10 @@ export default {
     client: 'https://urk-med.shop',
     cookiesConf: {
       domain: 'urk-med.shop',
+      sameSite: true,
+    },
+    csrf: {
+      domain: 'urk-med.shop',
     },
   },
 

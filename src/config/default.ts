@@ -26,7 +26,15 @@ export default {
       httpOnly: true,
       signed: true,
       domain: 'localhost',
+      sameSite: false,
     },
     trustProxy: ['loopback', 'uniquelocal'],
+    csrf: {
+      key: '_CS_r-f',
+      maxAge: 60 * 60, // 1 hour
+      httpOnly: true,
+      sameSite: true,
+      domain: 'localhost',
+    },
   },
 };
