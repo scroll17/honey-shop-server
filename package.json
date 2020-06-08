@@ -2,7 +2,7 @@
   "name": "honey-shop-server",
   "version": "1.0.0",
   "author": "Denis Zolotarenko",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "private": true,
   "scripts": {
     "tsc": "tsc",

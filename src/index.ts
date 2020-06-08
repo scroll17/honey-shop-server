@@ -43,8 +43,7 @@ cluster.on('exit', (worker) => {
   if (worker.exitedAfterDisconnect) {
     logger.debug(`Worker ${worker.id} exited`);
   } else {
-    logger.debug(`Worker ${worker.id} died :( and new one re-spawned`);
-    // TODO filelogger
+    logger.error(`Worker ${worker.id} died :( and new one re-spawned`);
     cluster.fork();
   }
 });
