@@ -7,7 +7,7 @@ export default {
 
   http: {
     host: `http://localhost:${defaultConfig.http.port}`,
-    client: `http://localhost:${4100}`,
+    client: `http://localhost:${process.env.CLIENT_PORT}`,
   },
 
   postgres: {
