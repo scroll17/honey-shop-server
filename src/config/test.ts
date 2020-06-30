@@ -17,9 +17,9 @@ export default {
 
   postgres: {
     disableDrop: false,
-    database: 'honey-shop',
-    user: 'postgres',
-    host: 'database',
-    schema: `beyrep_testing_${_.uniqueId()}`,
+    database: process.env.DB_NAME as string,
+    user: process.env.DB_USERNAME as string,
+    host: process.env.DB_HOST as string,
+    schema: `beyrep_testing_${_.uniqueId()}`
   },
 };

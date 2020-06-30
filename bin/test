@@ -1,0 +1,14 @@
+#! /usr/bin/env node
+/* eslint no-console: 'off' */
+
+console.time('Tests duration');
+
+process.env.NODE_ENV = 'test';
+
+const [{ runTests }] = require('./transpileTS')(['../src/test']);
+
+const pattern = process.argv[2];
+runTests(pattern && new RegExp(pattern))
+  .then(() => process.exit(0))
+  .catch(() => process.exit(1))
+  .finally(() => console.timeEnd('Tests duration'));

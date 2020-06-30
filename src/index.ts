@@ -1,21 +1,15 @@
 /* external modules */
 import cluster from 'cluster';
-import path from 'path';
-import os from 'os';
 /* other */
 import { config } from './config';
 import logger from './logger';
 
-const numCPUs = config.name === 'production' ? os.cpus().length : 1;
-
 logger.debug(`Master "${process.pid}" is running`);
 
-cluster.setupMaster({
-  exec: path.join(__dirname, './worker.js'),
-});
+cluster.setupMaster(config.cluster);
 
 // Fork workers.
-for (let i = 0; i < numCPUs; i++) {
+for (let i = 0; i < config.cluster.numFork; i++) {
   cluster.fork();
 }
 
@@ -52,6 +46,6 @@ logger.info(`
   ----------------------------------
         Starting WEB Server . . .
         Environment: "${config.name}"
-        Cluster count: "${numCPUs}"
+        Cluster count: "${config.cluster.numFork}"
   ----------------------------------
 `);

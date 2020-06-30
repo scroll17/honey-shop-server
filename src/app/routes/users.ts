@@ -1,5 +1,5 @@
-// var express = require('express');
-// var router = express.Router();
+// import express from 'express';
+// const router = express.Router();
 //
 // /* GET users listing. */
 // router.get('/', function(req, res, next) {
@@ -7,3 +7,7 @@
 // });
 //
 // module.exports = router;
+//
+// function defMethod(method: 'get' | 'post' | 'put' | 'delete', handlers: Array<express.Handler>) {
+//
+// }

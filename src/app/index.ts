@@ -7,6 +7,9 @@ import { config } from '../config';
 import { expressLogger } from '../logger';
 import helmetProtection from './middleware/protection';
 import errorHandlers from './middleware/errorHandlers';
+import { pool } from "../db";
+
+if(false) pool.query('SELECT 1')
 
 const app: express.Application = express();
 
@@ -15,7 +18,7 @@ app.set('trust proxy', config.http.trustProxy);
 
 app.disable('x-powered-by');
 
-app.use('/public', express.static(config.publicPath, { maxAge: '7d' }));
+app.use('/images', express.static(config.public.images, { maxAge: '7d' }));
 
 app.use(expressLogger);
 
@@ -24,11 +27,7 @@ app.use(cookieParser(config.secrets.cookieSecret));
 
 helmetProtection(app);
 
-// app.use((req, res) => {
-//   res.cookie('access_token', 'Bearer ' + 'token', {
-//     expires: new Date(Date.now() + 8 * 3600000) // cookie will be removed after 8 hours
-//   })
-// })
+/** TEST */
 
 app.get('/', (req, res) => {
   res.send({ csrfToken: req.csrfToken() });
@@ -37,6 +36,18 @@ app.get('/', (req, res) => {
 app.post('/', (req, res) => {
   res.send({ type: 'post' });
 });
+
+app.use("/url", async function (req, res, next) {
+  try {
+    throw new Error('TEST')
+    res.sendStatus(200);
+  } catch (error) {
+    console.log('ERROR => ', error)
+    next(error)
+  }
+});
+
+/** TEST */
 
 app.use(errorHandlers);
 

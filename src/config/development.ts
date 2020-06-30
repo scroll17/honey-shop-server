@@ -12,9 +12,9 @@ export default {
 
   postgres: {
     disableDrop: false, // TODO _?
-    database: 'honey-shop',
-    user: 'postgres',
-    host: 'database',
+    database: process.env.DB_NAME as string,
+    user: process.env.DB_USERNAME as string,
+    host: process.env.DB_HOST as string,
     schema: 'public',
   },
 };

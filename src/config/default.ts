@@ -2,7 +2,15 @@ import path from 'path';
 import moment from 'moment';
 
 export default {
-  publicPath: path.resolve(__dirname, '../../', 'public'),
+  public: {
+    files: path.resolve(__dirname, '../../../../', 'data/public/files'),
+    images: path.resolve(__dirname, '../../../../', 'data/public/images')
+  },
+
+  private: {
+    files: path.resolve(__dirname, '../../../../', 'data/private/files'),
+    images: path.resolve(__dirname, '../../../../', 'data/private/images')
+  },
 
   logger: {
     level: 'all',
@@ -10,12 +18,17 @@ export default {
     useConsole: true,
   },
 
+  cluster: {
+    exec: path.join(__dirname, '../../worker.js'),
+    numFork: 1
+  },
+
   postgres: {
     disableDrop: true,
     schema: 'public',
-    port: 5432,
-    max: 10,
-    min: 3,
+    port: Number(process.env.DB_PORT),
+    max: 5,
+    min: 1,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 10000,
   },

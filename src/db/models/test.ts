@@ -16,7 +16,7 @@
 //   public name = 'test';
 //
 //   //@select
-//   findById(args) {
+//   findByName() {
 //     return 5
 //   }
 // }

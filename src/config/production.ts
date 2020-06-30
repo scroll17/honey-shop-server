@@ -1,4 +1,5 @@
 import path from 'path';
+import os from "os";
 
 export default {
   name: 'production',
@@ -9,12 +10,16 @@ export default {
     useConsole: false,
   },
 
+  cluster: {
+    numFork: os.cpus().length
+  },
+
   http: {
     host: 'https://urk-med.shop/api',
     client: 'https://urk-med.shop',
     cookiesConf: {
       domain: 'urk-med.shop',
-      sameSite: true,
+      sameSite: 'strict',
     },
     csrf: {
       domain: 'urk-med.shop',
@@ -22,9 +27,8 @@ export default {
   },
 
   postgres: {
-    database: 'beyrep-com',
-    user: 'beyrep-com',
-    host: '10.73.16.3',
+    database: process.env.DB_NAME as string,
+    user: process.env.DB_USERNAME as string,
+    host: process.env.DB_HOST as string
   },
-  // TODO
 };

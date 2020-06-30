@@ -12,7 +12,20 @@ export interface AppConfig {
   name: string;
 
   secretsPath: string;
-  publicPath: string;
+  public: {
+    files: string;
+    images: string;
+  }
+
+  private: {
+    files: string;
+    images: string;
+  }
+
+  cluster: {
+    exec: string;
+    numFork: number;
+  }
 
   logger: {
     level: string;
@@ -43,13 +56,13 @@ export interface AppConfig {
       httpOnly: boolean;
       signed: boolean;
       domain: string;
-      sameSite: boolean;
+      sameSite: boolean | ('strict' | 'lax' | 'none');
     };
     csrf: {
       key: string;
       maxAge: number;
       httpOnly: boolean;
-      sameSite: boolean;
+      sameSite: boolean | ('strict' | 'lax' | 'none');
       domain: string;
     };
   };
