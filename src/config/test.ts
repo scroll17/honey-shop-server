@@ -20,6 +20,6 @@ export default {
     database: process.env.DB_NAME as string,
     user: process.env.DB_USERNAME as string,
     host: process.env.DB_HOST as string,
-    schema: `beyrep_testing_${_.uniqueId()}`
+    schema: `honey_testing_${_.uniqueId()}`,
   },
 };

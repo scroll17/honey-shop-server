@@ -13,9 +13,9 @@ export async function runTests(pattern?: RegExp) {
   try {
     logger.info('Setup tests');
 
-    await Promise.all([setup(), collectTestFiles(file => mocha.addFile(file), __dirname, pattern)]);
+    await Promise.all([setup(), collectTestFiles((file) => mocha.addFile(file), __dirname, pattern)]);
 
-    const failures = await new Promise<number>(resolve => mocha.run(resolve));
+    const failures = await new Promise<number>((resolve) => mocha.run(resolve));
     if (failures) throw new Error('Tests are failed');
   } catch (error) {
     logger.fatal(error, 'tests did crashed');

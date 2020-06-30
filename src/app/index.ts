@@ -7,9 +7,9 @@ import { config } from '../config';
 import { expressLogger } from '../logger';
 import helmetProtection from './middleware/protection';
 import errorHandlers from './middleware/errorHandlers';
-import { pool } from "../db";
+import { pool } from '../db';
 
-if(false) pool.query('SELECT 1')
+if (false) pool.query('SELECT 1');
 
 const app: express.Application = express();
 
@@ -37,13 +37,13 @@ app.post('/', (req, res) => {
   res.send({ type: 'post' });
 });
 
-app.use("/url", async function (req, res, next) {
+app.use('/url', async function (req, res, next) {
   try {
-    throw new Error('TEST')
+    throw new Error('TEST');
     res.sendStatus(200);
   } catch (error) {
-    console.log('ERROR => ', error)
-    next(error)
+    console.log('ERROR => ', error);
+    next(error);
   }
 });
 

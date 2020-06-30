@@ -15,17 +15,17 @@ export interface AppConfig {
   public: {
     files: string;
     images: string;
-  }
+  };
 
   private: {
     files: string;
     images: string;
-  }
+  };
 
   cluster: {
     exec: string;
     numFork: number;
-  }
+  };
 
   logger: {
     level: string;

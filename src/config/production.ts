@@ -1,5 +1,5 @@
 import path from 'path';
-import os from "os";
+import os from 'os';
 
 export default {
   name: 'production',
@@ -11,7 +11,7 @@ export default {
   },
 
   cluster: {
-    numFork: os.cpus().length
+    numFork: os.cpus().length,
   },
 
   http: {
@@ -29,6 +29,6 @@ export default {
   postgres: {
     database: process.env.DB_NAME as string,
     user: process.env.DB_USERNAME as string,
-    host: process.env.DB_HOST as string
+    host: process.env.DB_HOST as string,
   },
 };

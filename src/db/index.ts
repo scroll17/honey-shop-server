@@ -1,22 +1,22 @@
 /* external modules */
 import { Pool, PoolClient, QueryConfig } from 'pg';
 /* other */
-import { config } from "../config";
-import logger from "../logger";
+import { config } from '../config';
+import logger from '../logger';
 
 export const schema = config.postgres.schema;
 
 const pool = new Pool({
   ...config.postgres,
-  password: config.secrets.postgresPassword
-})
+  password: config.secrets.postgresPassword,
+});
 
-pool.on('error', error => logger.error('POOL ERROR:', error));
+pool.on('error', (error) => logger.error('POOL ERROR:', error));
 
 type GetClientCallback<TReturn> = (client: PoolClient, schema: string) => Promise<TReturn>;
 
 async function query<TReturn = undefined>(config: QueryConfig) {
-  return pool.query<TReturn>(config)
+  return pool.query<TReturn>(config);
 }
 
 async function getClient<TReturn = undefined>(cb: GetClientCallback<TReturn>) {
@@ -50,28 +50,23 @@ async function wrapTransaction<TReturn = undefined>(client: PoolClient, cb: GetC
 }
 
 async function getClientTransaction<TReturn = undefined>(cb: GetClientCallback<TReturn>) {
-  return getClient(client => wrapTransaction(client, cb));
+  return getClient((client) => wrapTransaction(client, cb));
 }
 
-(async () => {
-  try {
-    const query = {
-      name: 'get-name',
-      text: 'SELECT $1::text',
-      values: ['brianc'],
-    }
+// TODO
+// (async () => {
+//   try {
+//     const query = {
+//       name: 'get-name',
+//       text: 'SELECT $1::text',
+//       values: ['brianc'],
+//     };
+//
+//     const result = await pool.query(query);
+//     logger.info('result => ', result);
+//   } catch (e) {
+//     logger.error(e);
+//   }
+// })();
 
-    const result = await pool.query(query)
-    logger.info('result => ', result)
-  } catch (e) {
-    logger.error(e);
-  }
-})()
-
-export {
-  pool,
-  query,
-  getClient,
-  getClientTransaction,
-  wrapTransaction
-}
+export { pool, query, getClient, getClientTransaction, wrapTransaction };

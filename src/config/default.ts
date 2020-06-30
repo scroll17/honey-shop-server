@@ -4,12 +4,12 @@ import moment from 'moment';
 export default {
   public: {
     files: path.resolve(__dirname, '../../../../', 'data/public/files'),
-    images: path.resolve(__dirname, '../../../../', 'data/public/images')
+    images: path.resolve(__dirname, '../../../../', 'data/public/images'),
   },
 
   private: {
     files: path.resolve(__dirname, '../../../../', 'data/private/files'),
-    images: path.resolve(__dirname, '../../../../', 'data/private/images')
+    images: path.resolve(__dirname, '../../../../', 'data/private/images'),
   },
 
   logger: {
@@ -20,7 +20,7 @@ export default {
 
   cluster: {
     exec: path.join(__dirname, '../../worker.js'),
-    numFork: 1
+    numFork: 1,
   },
 
   postgres: {
