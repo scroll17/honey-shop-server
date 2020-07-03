@@ -81,6 +81,10 @@ sql.raw = wrapValue(SQL_RAW_KEY);
 sql.batch = wrapValue(SQL_BATCH_KEY);
 sql.DEFAULT = wrapValue(SQL_DEFAULT_KEY)('DEFAULT');
 
+const isDefault = <TObject>(value: TObject) => isWrapped(SQL_DEFAULT_KEY, value);
+const isRaw = <TObject>(value: TObject) => isWrapped(SQL_RAW_KEY, value);
+const isBatch = <TObject>(value: TObject) => isWrapped(SQL_BATCH_KEY, value);
+
 function wrapValue(symKey: symbol) {
   return <TValue>(value: TValue): WrappedValue<TValue> => ({ [symKey]: value });
 }
@@ -92,10 +96,6 @@ function unwrapValue<TValue>(symKey: symbol, value: WrappedValue<TValue>): TValu
 function isWrapped<TObject>(symKey: symbol, object: TObject) {
   return isObject(object) && Object.getOwnPropertySymbols(object).includes(symKey);
 }
-
-const isDefault = <TObject>(value: TObject) => isWrapped(SQL_DEFAULT_KEY, value);
-const isRaw = <TObject>(value: TObject) => isWrapped(SQL_RAW_KEY, value);
-const isBatch = <TObject>(value: TObject) => isWrapped(SQL_BATCH_KEY, value);
 
 function isQuery<TValue>(value: TValue) {
   return isObject(value) && value instanceof SqlStatement;

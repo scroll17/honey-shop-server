@@ -1,13 +1,17 @@
-/* external modules */
+/*external modules*/
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
-/* other */
-import { config } from '../config';
-import { expressLogger } from '../logger';
+/*DB*/
+import { pool } from '../db';
+/*middleware*/
 import helmetProtection from './middleware/protection';
 import errorHandlers from './middleware/errorHandlers';
-import { pool } from '../db';
+/*@core*/
+import { applyControllers } from "./core";
+/*other*/
+import { config } from '../config';
+import { expressLogger } from '../logger';
 
 if (false) pool.query('SELECT 1');
 
@@ -27,27 +31,7 @@ app.use(cookieParser(config.secrets.cookieSecret));
 
 helmetProtection(app);
 
-/** TEST */
-
-app.get('/', (req, res) => {
-  res.send({ csrfToken: req.csrfToken() });
-});
-
-app.post('/', (req, res) => {
-  res.send({ type: 'post' });
-});
-
-app.use('/url', async function (req, res, next) {
-  try {
-    throw new Error('TEST');
-    res.sendStatus(200);
-  } catch (error) {
-    console.log('ERROR => ', error);
-    next(error);
-  }
-});
-
-/** TEST */
+applyControllers(app, []);
 
 app.use(errorHandlers);
 
