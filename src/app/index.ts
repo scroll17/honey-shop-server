@@ -1,14 +1,14 @@
 /*external modules*/
 import express from 'express';
+import csurf from "csurf";
 import cookieParser from 'cookie-parser';
-import * as bodyParser from 'body-parser';
 /*DB*/
 import { pool } from '../db';
 /*middleware*/
-import helmetProtection from './middleware/protection';
+import protectionMiddleware from './middleware/protection';
 import errorHandlers from './middleware/errorHandlers';
-/*@core*/
-import { applyControllers } from "./core";
+/*controllers*/
+import ServiceController from "./controllers";
 /*other*/
 import { config } from '../config';
 import { expressLogger } from '../logger';
@@ -22,16 +22,47 @@ app.set('trust proxy', config.http.trustProxy);
 
 app.disable('x-powered-by');
 
-app.use('/images', express.static(config.public.images, { maxAge: '7d' }));
+app.use('/static/images', express.static(config.public.images, { maxAge: '7d' }));
+app.use(
+  '/static/files',
+  (req, res, next) => {
+    console.log('config', config.public.files);
+    next();
+  },
+  express.static(config.public.files, { maxAge: '7d' })
+);
 
 app.use(expressLogger);
 
-app.use(bodyParser.json());
-app.use(cookieParser(config.secrets.cookieSecret));
+app.use(express.json());
 
-helmetProtection(app);
+// import { Application } from 'express';
+// import app from '../index';
+//
+// export function applyControllers(app: Application, controllers: Array<any>) {}
+//
+// // TODO
+// // app.get('/', (req, res) => {
+// //   res.send({ csrfToken: req.csrfToken() });
+// // });
+// //
+// // app.post('/', (req, res) => {
+// //   res.send({ type: 'post' });
+// // });
+// //
+// // app.use('/url', async function (req, res, next) {
+// //   try {
+// //     throw new Error('TEST');
+// //     res.sendStatus(200);
+// //   } catch (error) {
+// //     console.log('ERROR => ', error);
+// //     next(error);
+// //   }
+// // });
 
-applyControllers(app, []);
+protectionMiddleware(app);
+
+ServiceController.setupControllers(app).then(() => {})
 
 app.use(errorHandlers);
 

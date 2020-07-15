@@ -1,15 +1,17 @@
 import path from 'path';
 import moment from 'moment';
 
+const createPath = (access: 'public' | 'private', type: string) => `/var/www/html/${access}/${type}`;
+
 export default {
   public: {
-    files: path.resolve(__dirname, '../../../../', 'data/public/files'),
-    images: path.resolve(__dirname, '../../../../', 'data/public/images'),
+    files: createPath('public', 'files'),
+    images: createPath('public', 'images'),
   },
 
   private: {
-    files: path.resolve(__dirname, '../../../../', 'data/private/files'),
-    images: path.resolve(__dirname, '../../../../', 'data/private/images'),
+    files: createPath('private', 'files'),
+    images: createPath('private', 'images'),
   },
 
   logger: {

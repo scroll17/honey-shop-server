@@ -14,12 +14,4 @@ export default (app: express.Application): void => {
   app.use(helmet.xssFilter()); // https://github.com/helmetjs/x-xss-protection
 
   app.use(nocache()); // https://github.com/helmetjs/nocache
-
-  // https://github.com/expressjs/csurf
-  app.use(
-    csurf({
-      cookie: config.http.csrf,
-      value: (req) => req.get('csrf-token')!,
-    })
-  );
 };
