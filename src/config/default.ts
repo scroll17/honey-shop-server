@@ -25,12 +25,13 @@ export default {
     numFork: 1,
   },
 
+  // TODO _check options in doc
   postgres: {
     disableDrop: true,
     schema: 'public',
     port: Number(process.env.DB_PORT),
     max: 5,
-    min: 1,
+    min: 0,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 10000,
   },

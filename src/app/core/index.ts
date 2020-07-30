@@ -1,80 +1,167 @@
+/*external modules*/
 import 'reflect-metadata';
-import { Router, Application, Request, Response } from 'express'
-import {ClassMetaKey, ErrorMiddleware, IClass, IClassMetadata, IRouteMetadata, RoutesMetaKey} from "./decorators/types";
+import _ from 'lodash';
+import { Router, Application, RequestHandler } from 'express';
+/*DB*/
+import { DB, sql } from '../../db';
+import { User } from '../../db/types/user';
+/*@core*/
+import {
+  ClassMetaKey,
+  TErrorMiddleware,
+  IClass,
+  IClassMetadata,
+  IRouteMetadata,
+  RoutesMetaKey,
+  SymCustomPath,
+} from './decorators';
+import { authenticateHandler, createCtx, setResLocals, validateHandler } from './utils';
+/*other*/
+import { TArray, TFunction } from '@honey/types';
+import { ServerError } from '../error';
 
+export * from './decorators';
 
-// TODO
 export interface RouteContext {
-  currentUser?: string;
-  db: string;
-  // /** User record if valid auth token provided */
-  // currentUser?: User;
-  // /** If admin is impersonating user we store admin user in this field */
-  // impersonatingUser?: User;
-  // /** Helpers to defQuery postres */
-  // db: DB;
-  // /** Helpers to build SQL defQuery */
-  // sql: typeof sql;
-  // /** DataLoaders for caching defQuery */
-  // dataLoader: DataLoaderPackage;
-  // /** Request */
-  // req?: IncomingMessage;
-  // /** By default empty array. Used for running delayed events (e.g. run outside the transaction)*/
-  // events: TFunction.DelayedEvent[];
+  db: DB;
+  sql: typeof sql;
+  user: User;
+  events: TFunction.DelayedEvent[];
 }
 
-export * from './decorators'
+export function applyControllers<TController extends IClass>(
+  app: Application,
+  controllers: Array<TController>
+) {
+  const errorMiddleware: Array<TArray.PossibleArray<TErrorMiddleware>> = [];
 
-export function applyControllers<TController extends IClass>(app: Application, controllers: Array<TController>) {
-  let errorMiddleware: ErrorMiddleware[] = [];
+  controllers.forEach((controller) => {
+    if (!Reflect.hasOwnMetadata(ClassMetaKey, controller)) {
+      throw new ServerError(`"${controller.name}" not have metadata. Use class decorators.`);
+    }
 
-  controllers.forEach(controller => {
-    const expressRoute = Router();
+    const { routerOptions = {} }: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, controller);
+    const expressRoute = Router(routerOptions);
 
-    const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute)
-    errorMiddleware = errorMiddleware.concat(errorHandlers)
+    const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute);
+    errorMiddleware.push(errorHandlers);
 
-    expandRoutesMetadata(controller, expressRoute)
+    const controllerRoutes = Reflect.getOwnMetadata(RoutesMetaKey, controller.prototype);
+    if (controllerRoutes.size > 0) {
+      expandRoutesMetadata(controller.prototype, expressRoute);
+    }
 
-    app.use(prefix, expressRoute)
-  })
+    app.use(prefix, expressRoute);
+  });
 
-  errorMiddleware.forEach(middleware => app.use(middleware))
+  errorMiddleware.flat().forEach((middleware) => app.use(middleware));
 }
 
-function expandClassMetadata<TController extends IClass>(controller: TController, Router: Router): Omit<IClassMetadata, 'handlers'> {
-  const classMetadata: IClassMetadata = Reflect.getMetadata(ClassMetaKey, controller);
+function expandClassMetadata<TController extends IClass>(
+  controller: TController,
+  Router: Router
+): Pick<IClassMetadata, 'prefix' | 'errorHandlers'> {
+  const { handlers, errorHandlers, prefix }: IClassMetadata = Reflect.getMetadata(ClassMetaKey, controller);
 
-  if('handlers' in classMetadata) {
-    classMetadata['handlers'].forEach(({ prefix, handler }) => {
-      if(prefix === '') {
-        Router.use(handler)
+  if (!prefix) {
+    throw new ServerError(`"${controller.name}" not have prefix. Use @Controller.`);
+  }
+
+  if (handlers) {
+    handlers.forEach(({ prefix, handler }) => {
+      if (prefix === '') {
+        Router.use(handler);
       } else {
-        if(Array.isArray(prefix)) {
-          const regular = new RegExp(`(${prefix.join('|')})$`)
-          Router.use(regular, handler)
+        if (Array.isArray(prefix)) {
+          const regular = new RegExp(`(${prefix.join('|')})$`);
+          Router.use(regular, handler);
         } else {
-          Router.use(prefix, handler)
+          Router.use(prefix, handler);
         }
       }
-    })
+    });
   }
 
   return {
-    prefix: classMetadata.prefix,
-    errorHandlers: classMetadata.errorHandlers ?? []
-  }
+    prefix: prefix,
+    errorHandlers: errorHandlers ?? [],
+  };
 }
 
-function expandRoutesMetadata<TController extends IClass>(controller: TController, Router: Router) {
-  const instance = new controller();
-  //const routes: Array<IRouteMetadata> = Reflect.getMetadata(RoutesMetaKey, controller);
-  const routes: Array<IRouteMetadata> = Reflect.getMetadata('routes', controller);
+function expandRoutesMetadata<TController extends IClass>(
+  prototype: TController['prototype'],
+  Router: Router
+) {
+  const routes: Array<IRouteMetadata> = Reflect.getOwnMetadata(RoutesMetaKey, prototype);
+  const controllerName = prototype.constructor.name;
 
-  // TODO: UPDATE!
-  routes.forEach(route => {
-    Router[route.requestMethod](route.path, (req: Request, res: Response, next) => {
-      instance[route.methodName](req, res, next);
+  /** check required properties */
+  routes.forEach((routeConfig) => {
+    const path = _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path');
+    const method = routeConfig.requestMethod;
+
+    if (!path) {
+      throw new ServerError(
+        `In "${controllerName}". Route must have a path. Use @Path or @Method(HttpVerb).`
+      );
+    }
+
+    if (!method) {
+      throw new ServerError(
+        `In "${controllerName}". Route must have a request method. Use @Method(HttpVerb).`
+      );
+    }
+  });
+
+  /** check uniqueness of paths */
+  const paths = new Set();
+  routes.forEach((routeConfig) => {
+    const pathToAdd = `${_.upperCase(routeConfig.requestMethod)} ${
+      _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path')
+    }`;
+
+    if (paths.has(pathToAdd)) {
+      throw new ServerError(
+        `In "${controllerName}". "${pathToAdd}" already exist. Route must have a unique path.`
+      );
+    } else {
+      paths.add(pathToAdd);
+    }
+  });
+
+  routes.forEach((routeConfig, methodName) => {
+    const { ctxKeys, authRole, middleware, validateFunc } = routeConfig;
+
+    const path = _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path');
+    const method = routeConfig.requestMethod;
+    const [beforeHandlers = [], afterHandlers = []] = middleware ?? [];
+
+    const resLocals = {};
+    const targetMiddleware: Array<RequestHandler> = [...beforeHandlers];
+
+    validateFunc && _.set(resLocals, 'validateFunc', validateFunc);
+    authRole && _.set(resLocals, 'authRole', authRole);
+
+    if (!_.isEmpty(resLocals)) {
+      targetMiddleware.push(setResLocals(resLocals));
+
+      if (_.has(resLocals, 'validateFunc')) {
+        targetMiddleware.push(validateHandler);
+      }
+      if (_.has(resLocals, 'authRole')) {
+        targetMiddleware.push(authenticateHandler);
+      }
+    }
+
+    targetMiddleware.push((req, res, next) => {
+      const ctx = _.isEmpty(ctxKeys) ? {} : createCtx(ctxKeys!, req, res, next);
+      prototype[methodName]({ ctx, req, res, next });
     });
-  })
+
+    Router[method](path, [...targetMiddleware, ...afterHandlers]);
+  });
 }
+
+// function expandInjectedPropertyMetadata() {
+//
+// }

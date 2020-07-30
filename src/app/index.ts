@@ -1,19 +1,13 @@
 /*external modules*/
 import express from 'express';
-import csurf from "csurf";
-import cookieParser from 'cookie-parser';
-/*DB*/
-import { pool } from '../db';
 /*middleware*/
 import protectionMiddleware from './middleware/protection';
 import errorHandlers from './middleware/errorHandlers';
+import { expressLogger } from './middleware/logger';
 /*controllers*/
-import ServiceController from "./controllers";
+import ServiceController from './controllers';
 /*other*/
 import { config } from '../config';
-import { expressLogger } from '../logger';
-
-if (false) pool.query('SELECT 1');
 
 const app: express.Application = express();
 
@@ -23,18 +17,10 @@ app.set('trust proxy', config.http.trustProxy);
 app.disable('x-powered-by');
 
 app.use('/static/images', express.static(config.public.images, { maxAge: '7d' }));
-app.use(
-  '/static/files',
-  (req, res, next) => {
-    console.log('config', config.public.files);
-    next();
-  },
-  express.static(config.public.files, { maxAge: '7d' })
-);
+app.use('/static/files', express.static(config.public.files, { maxAge: '7d' }));
 
 app.use(expressLogger);
-
-app.use(express.json());
+app.use(protectionMiddleware());
 
 // import { Application } from 'express';
 // import app from '../index';
@@ -46,9 +32,10 @@ app.use(express.json());
 // //   res.send({ csrfToken: req.csrfToken() });
 // // });
 // //
-// // app.post('/', (req, res) => {
-// //   res.send({ type: 'post' });
-// // });
+// app.post('/post', (req, res) => {
+//   console.log('headers => ', req.headers)
+//   res.send({ type: 'post' });
+// });
 // //
 // // app.use('/url', async function (req, res, next) {
 // //   try {
@@ -60,9 +47,7 @@ app.use(express.json());
 // //   }
 // // });
 
-protectionMiddleware(app);
-
-ServiceController.setupControllers(app).then(() => {})
+ServiceController.setupControllers(app).then(() => {});
 
 app.use(errorHandlers);
 

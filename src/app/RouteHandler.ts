@@ -1,7 +1,6 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response, NextFunction } from 'express';
 
 abstract class RouteHandler {
-
   constructor() {
     const func = this.action;
 
@@ -9,16 +8,15 @@ abstract class RouteHandler {
       try {
         await this.validate(req, res, next);
         await func.call(this, req, res, next);
-      } catch ( ex ) {
+      } catch (ex) {
         next(ex);
       }
     };
   }
 
-  abstract async validate(req: Request, res: Response, next: NextFunction): Promise<void | Error>
+  abstract async validate(req: Request, res: Response, next: NextFunction): Promise<void | Error>;
 
-  abstract async action(req: Request, res: Response, next: NextFunction): Promise<void | Error>
-
+  abstract async action(req: Request, res: Response, next: NextFunction): Promise<void | Error>;
 }
 
-export default RouteHandler
+export default RouteHandler;

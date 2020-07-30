@@ -1,7 +1,7 @@
 /*external modules*/
-import { Handler } from 'express'
-/*types*/
-import {ClassMetaKey, RoutesMetaKey, IClassMetadata, ErrorMiddleware } from "./types";
+import { RouterOptions } from 'express';
+/*@core*/
+import { ClassMetaKey, RoutesMetaKey, IClassMetadata } from './types';
 
 /**
  *    "target" => class constructor
@@ -11,67 +11,17 @@ import {ClassMetaKey, RoutesMetaKey, IClassMetadata, ErrorMiddleware } from "./t
  *              Set up a prototype in a new constructor.
  * */
 
-export function Controller(prefix = ''): ClassDecorator {
-  return <T extends Function>(target: T) => {
-    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {}
-
-    if(!prefix.startsWith('/')) {
-      prefix = `/${prefix}`
-    }
-
-    if(prefix.endsWith('/')) {
-      prefix = prefix.slice(0, -1)
-    }
+export function Controller(prefix: string, options?: RouterOptions): ClassDecorator {
+  return (target) => {
+    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
 
     metadata['prefix'] = prefix;
+    metadata['routerOptions'] = options ?? {};
 
     Reflect.defineMetadata(ClassMetaKey, metadata, target);
 
-    // TODO
-    // if (!Reflect.hasOwnMetadata(RoutesMetaKey, target)) {
-    //   Reflect.defineMetadata(RoutesMetaKey, [], target);
-    // }
-
-    if (!Reflect.hasOwnMetadata('routes', target)) {
-      Reflect.defineMetadata('routes', [], target);
+    if (!Reflect.hasOwnMetadata(RoutesMetaKey, target.prototype)) {
+      Reflect.defineMetadata(RoutesMetaKey, new Map(), target.prototype);
     }
-  };
-}
-
-export function ClassMiddleware(handlers: Array<Handler>): ClassDecorator {
-  return <T extends Function>(target: T) => {
-    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
-
-    const handlerRecord = handlers.map(handler => ({ prefix: '', handler }));
-    if(Reflect.has(metadata, 'handlers')) {
-      metadata['handlers'] = metadata['handlers'].concat(handlerRecord)
-    } else {
-      metadata['handlers'] = handlerRecord
-    }
-
-    Reflect.defineMetadata(ClassMetaKey, metadata, target)
-  };
-}
-
-export function SingleClassMiddleware(prefix: string | string[], handler: Handler): ClassDecorator {
-  return <T extends Function>(target: T) => {
-    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
-
-    if(Reflect.has(metadata, 'handlers')) {
-      metadata['handlers'] = [...metadata['handlers'], { prefix, handler }];
-    } else {
-      metadata['handlers'] = [{ prefix, handler }]
-    }
-
-    Reflect.defineMetadata(ClassMetaKey, metadata, target)
-  };
-}
-
-export function ClassErrorMiddleware(errorHandler: ErrorMiddleware | ErrorMiddleware[]): ClassDecorator {
-  return <T extends Function>(target: T) => {
-    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
-    metadata['errorHandlers'] = Array.isArray(errorHandler) ? errorHandler : [errorHandler];
-
-    Reflect.defineMetadata(ClassMetaKey, metadata, target)
   };
 }

@@ -1,9 +1,9 @@
 /*external modules*/
 import assert from 'assert';
-import _ from "lodash";
+import _ from 'lodash';
 /*DB*/
 /*other*/
-import {ServerError} from "../../app/error";
+import { ServerError } from '../../app/error';
 
 export namespace Test {
   type TPrimitive = string | number | symbol | boolean | null | undefined;
@@ -14,53 +14,36 @@ export namespace Test {
     | symbol
     | boolean
     | {
-    $check:
-      | '=='
-      | '==='
-      | '!=='
-      | '!='
-      | '>='
-      | '<='
-      | '<'
-      | '>'
-      | 'equal'
-      | 'notEqual'
-      | 'strictEqual';
-    $value: TPrimitive;
-    $func?: (value: TValue) => TPrimitive;
-    $eMessage?:
-      | ((valueInData: TValue, value: TPrimitive) => string)
-      | string;
-  };
+        $check: '==' | '===' | '!==' | '!=' | '>=' | '<=' | '<' | '>' | 'equal' | 'notEqual' | 'strictEqual';
+        $value: TPrimitive;
+        $func?: (value: TValue) => TPrimitive;
+        $eMessage?: ((valueInData: TValue, value: TPrimitive) => string) | string;
+      };
 
   type TCheckObject<TObject> =
     | {
-    [TPath in keyof TObject]?: TObject[TPath] extends Array<
-        infer TArrayItem
-        >
-      ?
-      | {
-      [TKey in number]?:
-      | TCheckObject<TObject[TPath][TKey]>
-      | TCheckPrimitive<TObject[TPath][TKey]>;
-    }
-      | ({ $check: 'forEach' } & (TArrayItem extends TPrimitive
-      ? never
-      : TCheckObject<TArrayItem>))
-      | {
-      $check: 'some' | 'every';
-      $value: (value: TArrayItem) => boolean;
-      $eMessage?: string;
-    }
-      : TObject[TPath] extends TPrimitive | Date
-        ? TCheckPrimitive<TObject[TPath]>
-        : TObject[TPath] extends Record<string, any>
+        [TPath in keyof TObject]?: TObject[TPath] extends Array<infer TArrayItem>
+          ?
+              | {
+                  [TKey in number]?:
+                    | TCheckObject<TObject[TPath][TKey]>
+                    | TCheckPrimitive<TObject[TPath][TKey]>;
+                }
+              | ({ $check: 'forEach' } & (TArrayItem extends TPrimitive ? never : TCheckObject<TArrayItem>))
+              | {
+                  $check: 'some' | 'every';
+                  $value: (value: TArrayItem) => boolean;
+                  $eMessage?: string;
+                }
+          : TObject[TPath] extends TPrimitive | Date
+          ? TCheckPrimitive<TObject[TPath]>
+          : TObject[TPath] extends Record<string, any>
           ? TCheckObject<TObject[TPath]>
           : TCheckPrimitive<TObject[TPath]>;
-  }
+      }
     | {
-    [x: string]: any;
-  };
+        [x: string]: any;
+      };
 
   type TCheck<TData> = TData extends Array<infer TValue>
     ? { (value: TValue): TCheckObject<TValue> } | TCheckObject<TValue>
@@ -69,11 +52,16 @@ export namespace Test {
   export class Check {
     private static keyProperties = ['$value', '$check', '$func', '$eMessage'];
 
-    private static createErrorMessage(
-      valueInData: any,
-      value: any,
-      stackPaths: string[]
-    ): string {
+    public static error<TServerError>(error: TServerError, desiredError: ServerError | Error) {
+      if (!error) throw ServerError.notFound('errors');
+
+      assert(
+        _.get(error, 'message') == _.get(desiredError, 'message'),
+        `there should be error: "${desiredError.message}"`
+      );
+    }
+
+    private static createErrorMessage(valueInData: any, value: any, stackPaths: string[]): string {
       const stackError = stackPaths.join('.');
 
       let errorMessage = `Incorrect "${stackError}".`;
@@ -87,12 +75,7 @@ export namespace Test {
       return errorMessage;
     }
 
-    private static compare(
-      operator: string,
-      actual: any,
-      expected: any,
-      errorMessage: string
-    ) {
+    private static compare(operator: string, actual: any, expected: any, errorMessage: string) {
       switch (operator) {
         case '===':
           assert.ok(actual === expected, errorMessage);
@@ -140,13 +123,11 @@ export namespace Test {
 
     private static equal<TData>(
       data: TData,
-      dataToCheck: TCheckObject<TData> | object,
+      dataToCheck: TCheckObject<TData> | Record<string, unknown>,
       stackPaths: string[] = []
     ) {
       if (_.isUndefined(data)) {
-        throw new ServerError(
-          `"${stackPaths.join('.')}" Not Found. See GraphQL query schema.`
-        );
+        throw new ServerError(`"${stackPaths.join('.')}" Not Found. See GraphQL query schema.`);
       }
 
       if (_.isObject(data) && !_.isObject(dataToCheck)) {
@@ -158,7 +139,7 @@ export namespace Test {
       }
 
       if (_.isObject(data) && Object.getPrototypeOf(data) === Object.prototype) {
-        Object.keys(dataToCheck).forEach(field => {
+        Object.keys(dataToCheck).forEach((field) => {
           if (Check.keyProperties.includes(field)) {
             throw new ServerError(
               `in "${stackPaths.join('.')}": "${_.last(
@@ -188,14 +169,10 @@ export namespace Test {
 
           if ($check === 'some' || $check === 'every') {
             if (!_.isArray(data)) {
-              throw new ServerError(
-                `in "${stackError}": ${_.last(stackPaths)} is not array.`
-              );
+              throw new ServerError(`in "${stackError}": ${_.last(stackPaths)} is not array.`);
             }
             if (!_.isFunction($value)) {
-              throw new ServerError(
-                `in "${stackError}": $value" must be a function.`
-              );
+              throw new ServerError(`in "${stackError}": $value" must be a function.`);
             }
 
             return Check.compare(
@@ -209,9 +186,7 @@ export namespace Test {
           const $func = _.get(dataToCheck, '$func');
           if ($func) {
             if (!_.isFunction($func)) {
-              throw new ServerError(
-                `in "${stackError}": "$func" must be a function.`
-              );
+              throw new ServerError(`in "${stackError}": "$func" must be a function.`);
             }
 
             Check.compare(
@@ -231,32 +206,19 @@ export namespace Test {
              `);
             }
 
-            Check.compare(
-              $check,
-              data,
-              $value,
-              Check.createErrorMessage(data, dataToCheck, stackPaths)
-            );
+            Check.compare($check, data, $value, Check.createErrorMessage(data, dataToCheck, stackPaths));
           }
         } else {
           if (_.isUndefined(dataToCheck)) {
             throw new ServerError(`Your "${stackError}" is undefined.`);
           }
 
-          Check.compare(
-            'equal',
-            data,
-            dataToCheck,
-            Check.createErrorMessage(data, dataToCheck, stackPaths)
-          );
+          Check.compare('equal', data, dataToCheck, Check.createErrorMessage(data, dataToCheck, stackPaths));
         }
       }
     }
 
-    private static check<TData>(
-      data: TData,
-      dataToCheck: TCheckObject<TData>,
-    ) {
+    private static check<TData>(data: TData, dataToCheck: TCheckObject<TData>) {
       _.forEach(dataToCheck, (value, field) => {
         const valueInData = _.get(data, field);
 
@@ -272,21 +234,13 @@ export namespace Test {
               return Check.equal(valueInData, value, [field]);
             }
 
-            _.forEach(valueInData, data =>
-              Check.equal(data, _.omit(value, Check.keyProperties), [field])
-            );
+            _.forEach(valueInData, (data) => Check.equal(data, _.omit(value, Check.keyProperties), [field]));
           } else {
-            Object.keys(value).forEach(item => {
+            Object.keys(value).forEach((item) => {
               if (!_.isNaN(Number(item))) {
-                Check.equal(
-                  _.nth(valueInData, Number(item)),
-                  _.get(value, item),
-                  [field, item]
-                );
+                Check.equal(_.nth(valueInData, Number(item)), _.get(value, item), [field, item]);
               } else {
-                throw new ServerError(
-                  `"${field}" is array. You must use numbers to get item in arrays.`
-                );
+                throw new ServerError(`"${field}" is array. You must use numbers to get item in arrays.`);
               }
             });
           }
@@ -298,12 +252,12 @@ export namespace Test {
 
     static data<TData, TFields = Array<keyof TData>>(
       data: TData | TData[],
-      dataToCheck: TCheck<TData | TData[]>,
+      dataToCheck: TCheck<TData | TData[]>
     ) {
       if (!data) throw ServerError.notFound('data');
 
       if (data instanceof Array) {
-        return data.forEach(data => {
+        return data.forEach((data) => {
           if (_.isFunction(dataToCheck)) {
             Check.check(data, dataToCheck(data));
           } else {
@@ -313,13 +267,10 @@ export namespace Test {
       }
 
       if (_.isFunction(dataToCheck)) {
-        throw new ServerError(
-          `"data" is not array. The second parameter should be an object.`
-        );
+        throw new ServerError(`"data" is not array. The second parameter should be an object.`);
       }
 
       return Check.check(data, dataToCheck);
     }
   }
 }
-

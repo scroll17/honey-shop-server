@@ -1,7 +1,7 @@
 export * from './class';
 export * from './method';
 export * from './types';
-//export * from './middleware';
+export * from './middleware';
 
 /**
  *    "emitDecoratorMetadata"

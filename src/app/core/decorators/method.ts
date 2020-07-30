@@ -1,5 +1,23 @@
-import { RouteContext } from "../index";
-
+/*external modules*/
+import _ from 'lodash';
+import { Request } from 'express';
+/*DB*/
+import { UserRole } from '../../../db/types/user';
+/*@core*/
+import {
+  CtxMethodDecorator,
+  HttpMethodDecorator,
+  HttpVerb,
+  IRouteConfig,
+  IRouteMap,
+  IRouteMetadata,
+  MethodOptions,
+  RoutesMetaKey,
+  SymCustomPath,
+  ValidateCallback,
+} from './types';
+/*other*/
+import { ServerError } from '../../error';
 
 /**
  *    "target" => class constructor (if static) / class.prototype
@@ -9,46 +27,149 @@ import { RouteContext } from "../index";
  *    return => If the method decorator returns a value, that value will be used as a Property Descriptor for the method.
  * */
 
-// export const Get: MethodDecorator = (target, propertyKey, descriptor) => {
-//   // `target` equals our class, `propertyKey` equals our decorated method name
-//   return (target, propertyKey: string): void => {
-//     // In case this is the first route to be registered the `routes` metadata is likely to be undefined at this point.
-//     // To prevent any further validation simply set it to an empty array here.
-//     if (!Reflect.hasMetadata('routes', target.constructor)) {
-//       Reflect.defineMetadata('routes', [], target.constructor);
-//     }
-//
-//     // Get the routes stored so far, extend it by the new route and re-set the metadata.
-//     const routes = Reflect.getMetadata('routes', target.constructor) as Array<RouteDefinition>;
-//
-//     routes.push({
-//       requestMethod: 'get',
-//       path,
-//       methodName: propertyKey
-//     });
-//     Reflect.defineMetadata('routes', routes, target.constructor);
-//   }
-// }
+/**
+ *  middle -> Validate -> Authenticate -> currentMethod(?createCtx?) -> middle
+ * */
 
-interface MethodConfig {
-  prefix?: string;
-  postfix?: string;
-  ctx?: Array<Omit<keyof RouteContext, 'db'>>
-}
+export const Get: HttpMethodDecorator = (options) => {
+  return helperForRoutes(HttpVerb.GET, options);
+};
 
-export const Get = ({ prefix = '/', postfix = '', ctx = ['db'] }: MethodConfig): MethodDecorator => {
+export const Post: HttpMethodDecorator = (options) => {
+  return helperForRoutes(HttpVerb.POST, options);
+};
+
+export const Put: HttpMethodDecorator = (options) => {
+  return helperForRoutes(HttpVerb.PUT, options);
+};
+
+export const Delete: HttpMethodDecorator = (options) => {
+  return helperForRoutes(HttpVerb.DELETE, options);
+};
+
+export const Validate = <TReq extends Request = Request>(cb: ValidateCallback<TReq>): MethodDecorator => {
   return (target, propertyKey) => {
-    if (! Reflect.hasMetadata('routes', target.constructor)) {
-      Reflect.defineMetadata('routes', [], target.constructor);
-    }
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
 
-    const routes = Reflect.getMetadata('routes', target.constructor);
-
-    routes.push({
-      requestMethod: 'get',
-      path: prefix + String(propertyKey) + postfix,
-      methodName: propertyKey
+    const routeConfig: IRouteMetadata = routes.get(propertyKey) ?? ({} as IRouteMetadata);
+    routes.set(propertyKey, {
+      ...routeConfig,
+      validateFunc: cb,
     });
-    Reflect.defineMetadata('routes', routes, target.constructor);
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
   };
 };
+
+export const Config = (config: IRouteConfig): MethodDecorator => {
+  const options = _.transform<any, any>(config, (result, value, key) => {
+    if (_.isUndefined(value)) return false;
+
+    switch (key) {
+      case 'path': {
+        result[SymCustomPath] = value;
+        break;
+      }
+      case 'ctx': {
+        result['ctxKeys'] = value;
+        break;
+      }
+      case 'validate': {
+        result['validateFunc'] = value;
+        break;
+      }
+      case 'middleware': {
+        result['middleware'] = value;
+        break;
+      }
+      case 'role': {
+        result['authRole'] = value;
+        break;
+      }
+    }
+  });
+
+  return (target, propertyKey) => {
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
+
+    const routeConfig: IRouteMetadata = routes.get(propertyKey) ?? ({} as IRouteMetadata);
+    routes.set(propertyKey, {
+      ...routeConfig,
+      ...options,
+    });
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
+  };
+};
+
+export const Authenticate = (role: UserRole): MethodDecorator => {
+  return (target, propertyKey) => {
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
+
+    const routeConfig: IRouteMetadata = routes.get(propertyKey) ?? ({} as IRouteMetadata);
+    routes.set(propertyKey, {
+      ...routeConfig,
+      authRole: role,
+    });
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
+  };
+};
+
+export const Path = (path: string | RegExp): MethodDecorator => {
+  return (target, propertyKey) => {
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
+
+    const routeConfig: IRouteMetadata = routes.get(propertyKey) ?? ({} as IRouteMetadata);
+    routes.set(propertyKey, {
+      ...routeConfig,
+      [SymCustomPath]: path,
+    });
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
+  };
+};
+
+export const Ctx: CtxMethodDecorator = (keys, ...otherKeys) => {
+  return (target, propertyKey) => {
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
+
+    const routeConfig: IRouteMetadata = routes.get(propertyKey) ?? ({} as IRouteMetadata);
+    routes.set(propertyKey, {
+      ...routeConfig,
+      ctxKeys: [keys, otherKeys ?? []].flat(),
+    });
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
+  };
+};
+
+function helperForRoutes(httpVerb: HttpVerb, options?: MethodOptions): MethodDecorator {
+  let { prefix = '/' } = options ?? {};
+  const { postfix = '', ctx } = options ?? {};
+
+  return (target, propertyKey) => {
+    if (typeof propertyKey === 'symbol') {
+      throw new ServerError(`Method must be only string.`);
+    }
+
+    const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
+
+    prefix = propertyKey.startsWith('/') ? '' : prefix;
+
+    const routeConfig = routes.get(propertyKey) ?? {};
+    const options: IRouteMetadata = {
+      path: prefix + String(propertyKey) + postfix,
+      requestMethod: httpVerb,
+    };
+
+    if (!_.isEmpty(ctx)) options['ctxKeys'] = ctx;
+
+    routes.set(propertyKey, {
+      ...routeConfig,
+      ...options,
+    });
+
+    Reflect.defineMetadata(RoutesMetaKey, routes, target);
+  };
+}

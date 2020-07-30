@@ -1,5 +1,7 @@
 /* external modules */
 import { Pool, PoolClient, QueryConfig } from 'pg';
+/*DB*/
+import { sql } from './sql';
 /* other */
 import { config } from '../config';
 import logger from '../logger';
@@ -53,20 +55,13 @@ async function getClientTransaction<TReturn = undefined>(cb: GetClientCallback<T
   return getClient((client) => wrapTransaction(client, cb));
 }
 
-// TODO
-// (async () => {
-//   try {
-//     const query = {
-//       name: 'get-name',
-//       text: 'SELECT $1::text',
-//       values: ['brianc'],
-//     };
-//
-//     const result = await pool.query(query);
-//     logger.info('result => ', result);
-//   } catch (e) {
-//     logger.error(e);
-//   }
-// })();
+export interface DB {
+  pool: Pool;
+  sql: typeof sql;
+  query: typeof query;
+  getClient: typeof getClient;
+  getClientTransaction: typeof getClientTransaction;
+  wrapTransaction: typeof wrapTransaction;
+}
 
-export { pool, query, getClient, getClientTransaction, wrapTransaction };
+export { pool, query, getClient, getClientTransaction, wrapTransaction, sql };

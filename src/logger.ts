@@ -58,10 +58,4 @@ log4js.configure({
 
 const logger = log4js.getLogger();
 
-const expressLogger = log4js.connectLogger(logger, {
-  level: 'debug',
-  format: (req, res, format) => format(`":method :url" :status ${JSON.stringify(req.body) || ''}`),
-});
-
 export default logger;
-export { expressLogger };
