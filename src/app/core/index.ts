@@ -1,5 +1,6 @@
 /*external modules*/
 import 'reflect-metadata';
+import * as yup from 'yup';
 import _ from 'lodash';
 import { Router, Application, RequestHandler } from 'express';
 /*DB*/
@@ -11,9 +12,11 @@ import {
   TErrorMiddleware,
   IClass,
   IClassMetadata,
-  IRouteMetadata,
   RoutesMetaKey,
   SymCustomPath,
+  PropRoutesMetaKey,
+  IRouteMap,
+  IPopRouteMap,
 } from './decorators';
 import { authenticateHandler, createCtx, setResLocals, validateHandler } from './utils';
 /*other*/
@@ -27,12 +30,13 @@ export interface RouteContext {
   sql: typeof sql;
   user: User;
   events: TFunction.DelayedEvent[];
+  resolveEvents: () => Promise<void | Error>;
 }
 
 export function applyControllers<TController extends IClass>(
   app: Application,
   controllers: Array<TController>
-) {
+): void {
   const errorMiddleware: Array<TArray.PossibleArray<TErrorMiddleware>> = [];
 
   controllers.forEach((controller) => {
@@ -46,9 +50,16 @@ export function applyControllers<TController extends IClass>(
     const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute);
     errorMiddleware.push(errorHandlers);
 
+    const paths: Set<string> = new Set();
+
     const controllerRoutes = Reflect.getOwnMetadata(RoutesMetaKey, controller.prototype);
     if (controllerRoutes.size > 0) {
-      expandRoutesMetadata(controller.prototype, expressRoute);
+      expandRoutesMetadata(controller.prototype, expressRoute, paths);
+    }
+
+    const propControllersRoutes = Reflect.getOwnMetadata(PropRoutesMetaKey, controller.prototype);
+    if (propControllersRoutes.size > 0) {
+      expandInjectedPropertyMetadata(controller.prototype, expressRoute, paths);
     }
 
     app.use(prefix, expressRoute);
@@ -90,9 +101,10 @@ function expandClassMetadata<TController extends IClass>(
 
 function expandRoutesMetadata<TController extends IClass>(
   prototype: TController['prototype'],
-  Router: Router
+  Router: Router,
+  paths: Set<string>
 ) {
-  const routes: Array<IRouteMetadata> = Reflect.getOwnMetadata(RoutesMetaKey, prototype);
+  const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, prototype);
   const controllerName = prototype.constructor.name;
 
   /** check required properties */
@@ -114,7 +126,6 @@ function expandRoutesMetadata<TController extends IClass>(
   });
 
   /** check uniqueness of paths */
-  const paths = new Set();
   routes.forEach((routeConfig) => {
     const pathToAdd = `${_.upperCase(routeConfig.requestMethod)} ${
       _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path')
@@ -130,38 +141,86 @@ function expandRoutesMetadata<TController extends IClass>(
   });
 
   routes.forEach((routeConfig, methodName) => {
-    const { ctxKeys, authRole, middleware, validateFunc } = routeConfig;
+    const { ctxKeys, authRole, validateFunc } = routeConfig;
 
     const path = _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path');
     const method = routeConfig.requestMethod;
-    const [beforeHandlers = [], afterHandlers = []] = middleware ?? [];
+    const [beforeHandlers = [], afterHandlers = []] = routeConfig.middleware ?? [];
 
     const resLocals = {};
-    const targetMiddleware: Array<RequestHandler> = [...beforeHandlers];
+    const targetHandlers: Array<RequestHandler> = [];
 
     validateFunc && _.set(resLocals, 'validateFunc', validateFunc);
     authRole && _.set(resLocals, 'authRole', authRole);
 
     if (!_.isEmpty(resLocals)) {
-      targetMiddleware.push(setResLocals(resLocals));
+      targetHandlers.push(setResLocals(resLocals));
 
       if (_.has(resLocals, 'validateFunc')) {
-        targetMiddleware.push(validateHandler);
+        targetHandlers.push(validateHandler);
       }
       if (_.has(resLocals, 'authRole')) {
-        targetMiddleware.push(authenticateHandler);
+        targetHandlers.push(authenticateHandler);
       }
     }
 
-    targetMiddleware.push((req, res, next) => {
+    targetHandlers.push(async (req, res, next) => {
       const ctx = _.isEmpty(ctxKeys) ? {} : createCtx(ctxKeys!, req, res, next);
-      prototype[methodName]({ ctx, req, res, next });
+      await prototype[methodName]({ ctx, req, res, next });
     });
 
-    Router[method](path, [...targetMiddleware, ...afterHandlers]);
+    Router[method](path, [...beforeHandlers, ...targetHandlers, ...afterHandlers]);
   });
 }
 
-// function expandInjectedPropertyMetadata() {
-//
-// }
+function expandInjectedPropertyMetadata<TController extends IClass>(
+  prototype: TController['prototype'],
+  Router: Router,
+  paths: Set<string>
+) {
+  const routes: IPopRouteMap = Reflect.getOwnMetadata(PropRoutesMetaKey, prototype);
+  const controllerName = prototype.constructor.name;
+
+  /** check uniqueness of paths */
+  routes.forEach((routeConfig) => {
+    const pathToAdd = `${_.upperCase(routeConfig.requestMethod)} ${_.get(routeConfig, 'path')}`;
+
+    if (paths.has(pathToAdd)) {
+      throw new ServerError(
+        `In "${controllerName}". "${pathToAdd}" already exist. Route must have a unique path.`
+      );
+    } else {
+      paths.add(pathToAdd);
+    }
+  });
+
+  routes.forEach((routeConfig) => {
+    const { path, requestMethod, handlerType } = routeConfig;
+
+    const handlerInstance = new handlerType();
+
+    const [beforeHandlers = [], afterHandlers = []] = handlerInstance.middleware ?? [];
+    const targetHandlers: Array<RequestHandler> = [];
+
+    const { role: authRole, ctx: ctxKeys } = handlerInstance.config ?? {};
+
+    targetHandlers.push((req, res, next) => {
+      handlerInstance.validate({ yup, req, next });
+    });
+
+    const resLocals = {};
+    if (authRole) {
+      _.set(resLocals, 'authRole', authRole);
+
+      targetHandlers.push(setResLocals(resLocals));
+      targetHandlers.push(authenticateHandler);
+    }
+
+    targetHandlers.push(async (req, res, next) => {
+      const ctx = _.isEmpty(ctxKeys) ? {} : createCtx(ctxKeys!, req, res, next);
+      await handlerInstance.action({ ctx, req, res, next });
+    });
+
+    Router[requestMethod](path, [...beforeHandlers, ...targetHandlers, ...afterHandlers]);
+  });
+}

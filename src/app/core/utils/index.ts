@@ -16,12 +16,21 @@ export function setResLocals(options: IResLocals): RequestHandler {
   };
 }
 
-export function createCtx(keys: Array<keyof RouteContext>, req: Request, res: Response, next: NextFunction) {
+export function createCtx(
+  keys: Array<keyof RouteContext>,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Partial<RouteContext> {
   const ctxKeys = new Set(keys);
 
   const ctx: Partial<RouteContext> = {};
   if (ctxKeys.has('events')) {
     ctx['events'] = [];
+    ctx['resolveEvents'] = async () => {
+      if (!ctx.events) return;
+      await Promise.all(ctx.events.map((event) => event()));
+    };
   }
   if (ctxKeys.has('sql')) {
     ctx['sql'] = db.sql;
@@ -57,7 +66,7 @@ export const authenticateHandler: RequestHandler = (req, res, next) => {
 
   try {
     // TODO ...
-    res.locals[SymResLocals]['authUser'] = ''; // TODO
+    res.locals[SymResLocals]['authUser'] = authRole; // TODO
   } catch (ex) {
     // TODO
     next({ reason: 'AUTH', error: ex });

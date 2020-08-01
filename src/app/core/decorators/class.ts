@@ -1,7 +1,7 @@
 /*external modules*/
 import { RouterOptions } from 'express';
 /*@core*/
-import { ClassMetaKey, RoutesMetaKey, IClassMetadata } from './types';
+import { ClassMetaKey, RoutesMetaKey, IClassMetadata, PropRoutesMetaKey } from './types';
 
 /**
  *    "target" => class constructor
@@ -22,6 +22,10 @@ export function Controller(prefix: string, options?: RouterOptions): ClassDecora
 
     if (!Reflect.hasOwnMetadata(RoutesMetaKey, target.prototype)) {
       Reflect.defineMetadata(RoutesMetaKey, new Map(), target.prototype);
+    }
+
+    if (!Reflect.hasOwnMetadata(PropRoutesMetaKey, target.prototype)) {
+      Reflect.defineMetadata(PropRoutesMetaKey, new Map(), target.prototype);
     }
   };
 }

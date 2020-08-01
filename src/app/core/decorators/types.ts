@@ -1,9 +1,10 @@
 /*external modules*/
 import { ErrorRequestHandler, Handler, NextFunction, Request, Response, RouterOptions } from 'express';
-import Yup from 'yup';
+import * as Yup from 'yup';
+/*DB*/
+import { UserRole } from '../../../db/types/user';
 /*@core*/
 import { RouteContext } from '../index';
-import { UserRole } from '../../../db/types/user';
 
 /** CLASS */
 export const ClassMetaKey = Symbol('meta-class');
@@ -30,13 +31,13 @@ type ReqParams = string[] | { [key: string]: string };
 
 type CtxKeys = keyof RouteContext;
 
-export type ParamsInMethod<
+export type ActionOptions<
   TCtxKeys extends keyof RouteContext,
   TBody extends ReqBody,
   TParams extends ReqParams = Record<string, any>,
   TQuery extends ReqQuery = Record<string, any>
 > = {
-  ctx: Pick<RouteContext, TCtxKeys>;
+  ctx: Pick<RouteContext, TCtxKeys extends 'events' ? TCtxKeys | 'resolveEvents' : TCtxKeys>;
   req: Request<TParams, ResBody, TBody, TQuery>;
   res: Response;
   next: NextFunction;
@@ -83,6 +84,34 @@ export type CtxMethodDecorator = (
 export type HttpMethodDecorator = (options?: MethodOptions) => MethodDecorator;
 
 /** PROPERTY */
+export const PropRoutesMetaKey = Symbol('property-meta-routes');
+
+export type InjectMethodDecorator = (method: string | HttpVerb, path: string | RegExp) => PropertyDecorator;
+
+export interface IPropRouteMetadata {
+  path: string | RegExp;
+  requestMethod: HttpVerb;
+  handlerType: IClass;
+}
+
+export type IPopRouteMap = Map<string | symbol, IPropRouteMetadata>;
+
+export interface IRouteHandlerConfig {
+  role?: UserRole;
+  ctx?: Array<CtxKeys>;
+}
+
+/** ROUTE HANDLER */
+
+export type ValidateOptions<
+  TBody extends ReqBody,
+  TParams extends ReqParams = Record<string, any>,
+  TQuery extends ReqQuery = Record<string, any>
+> = {
+  req: Request<TParams, ResBody, TBody, TQuery>;
+  next: NextFunction;
+  yup: typeof Yup;
+};
 
 /** OTHER */
 export const SymResLocals = Symbol('res-locals');

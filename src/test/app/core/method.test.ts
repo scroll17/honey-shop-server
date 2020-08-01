@@ -37,7 +37,7 @@ const SymRouterOptions = Symbol('router-options');
 
 let app: Express;
 
-describe('src/app/core/core/class', () => {
+describe('src/app/core/core/method', () => {
   before(() => {
     const express = function express() {
       return originalExpress();
@@ -97,9 +97,9 @@ describe('src/app/core/core/class', () => {
     class TestController {
       @Get(methodOptions)
       [methodName]({ req, res, next }: Record<string, any>) {
-        assert(_.isEqual(req, routeOptions.req), 'Invalid route "req" option.');
-        assert(_.isEqual(res, routeOptions.res), 'Invalid route "res" option.');
-        assert(_.isEqual(next, routeOptions.next), 'Invalid route "next" option.');
+        assert(_.isEqual(req, routeOptions.req), 'Invalid route "req" object.');
+        assert(_.isEqual(res, routeOptions.res), 'Invalid route "res" object.');
+        assert(_.isEqual(next, routeOptions.next), 'Invalid route "next" object.');
       }
     }
 
@@ -119,7 +119,7 @@ describe('src/app/core/core/class', () => {
   });
 
   it('@Ctx', () => {
-    const ctxKeys: any[] = ['db', 'events'];
+    const ctxKeys: any[] = ['db'];
     const methodName = '/create';
 
     @Controller('/test')
@@ -127,14 +127,7 @@ describe('src/app/core/core/class', () => {
       @Post()
       @Ctx(ctxKeys, 'sql')
       [methodName]({ ctx }: Record<string, any>) {
-        assert(
-          _.isEqual(ctx, {
-            sql,
-            db,
-            events: [],
-          }),
-          'Invalid route "ctx" option.'
-        );
+        assert(_.isEqual(ctx, { sql, db }), 'Invalid route "ctx" object.');
       }
     }
 
@@ -226,12 +219,11 @@ describe('src/app/core/core/class', () => {
       @Put()
       @Config(configOptions)
       [configOptions.path as string]({ ctx }: Record<string, any>) {
+        assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { sql, events: [] }), 'Invalid route "ctx" object.');
+
         assert(
-          _.isEqual(ctx, {
-            sql,
-            events: [],
-          }),
-          'Invalid route "ctx" option.'
+          _.isEqual(_.keys(ctx).sort(), ['sql', 'events', 'resolveEvents'].sort()),
+          'Invalid route "ctx" keys.'
         );
       }
     }
@@ -256,7 +248,7 @@ describe('src/app/core/core/class', () => {
     assert(beforeHandler === configOptions.middleware![0][0], 'Invalid beforeHandler handler.');
     assert(authenticateHandler === authHandler, 'Invalid authenticate handler.');
     assert(validateHandler === valHandler, 'Invalid validate handler.');
-    assert(afterHandler === configOptions.middleware![1][0], 'Invalid beforeHandler handler.');
+    assert(afterHandler === configOptions.middleware![1][0], 'Invalid afterHandler handler.');
 
     targetHandler({}, {}, () => {});
   });

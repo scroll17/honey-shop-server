@@ -1,23 +1,25 @@
+import 'reflect-metadata';
 import {
-  Authenticate,
   ClassMiddleware,
   Config,
   Controller,
   Ctx,
   Middleware,
-  ParamsInMethod,
+  ActionOptions,
   Path,
   Validate,
-} from '../core';
-import { Get, Post } from '../core';
+} from '../../core';
+import { Get, Post } from '../../core';
 
 import express from 'express';
 
-import logger from '../../logger';
+import logger from '../../../logger';
+import { InjectRoute } from '../../core/decorators/property';
+import { Update } from './UpdateHandler';
 
 interface MethodsParam {
-  findById: ParamsInMethod<'events' | 'sql', Record<string, never>, { id: string }>;
-  create: ParamsInMethod<'events' | 'sql', { id: number }, { id: string }>;
+  findById: ActionOptions<'events' | 'sql', Record<string, never>, { id: string }>;
+  create: ActionOptions<'events' | 'sql', { id: number }, { id: string }>;
 }
 
 @Controller('/test', { mergeParams: true })
@@ -45,6 +47,9 @@ class TestController {
   }
 
   @Get({ postfix: '/:id', ctx: ['events', 'sql'] })
+  @Validate<MethodsParam['create']['req']>((yup, req) => {
+    const {} = req.body;
+  })
   async findById2({ ctx, req, res, next }: MethodsParam['findById']) {
     console.log('ctx => ', ctx);
 
@@ -66,70 +71,41 @@ class TestController {
   }
 
   @Post()
-  @Authenticate('vendor')
-  @Ctx('sql', 'db')
+  //@Authenticate('vendor')
+  @Ctx('events', 'db')
   @Path('/create/:id')
-  @Middleware([express.json()], [express.urlencoded()])
-  @Validate<MethodsParam['create']['req']>((yup, req) => {
-    const {} = req.body;
-
-    const schema = {
-      name: yup.string(),
-    };
-  })
-  @Middleware([], [])
+  @Middleware(
+    [],
+    [
+      (req, res) => {
+        console.log('-- NEXT HANDLER ---');
+        res.send();
+      },
+    ]
+  )
   create({ ctx, req, res, next }: MethodsParam['create']) {
+    ctx.events.push();
+
+    ctx.resolveEvents();
+
     console.log('ctx => ', ctx);
-    res.send('OK');
+    console.log('req.params => ', req.params);
+
+    return next();
   }
 
   @Post()
   @Config({
-    path: 'invite/:id',
+    path: '/invite/:id',
     ctx: ['db'],
     middleware: [[express.json()], [express.urlencoded()]],
     role: 'user',
     validate: (yup, req) => {},
   })
   invite() {}
-  // @InjectRouteHandler({
-  //   method: 'get',
-  //   path: '/update',
-  //   auth: '',              // ?
-  //   ctx: ['db'],           // ?
-  //   middleware: [ [], [] ] // ?
-  // })
-  // update: 'class {}'
+
+  @InjectRoute('post', '/update/:id')
+  update!: Update;
 }
 
 export default TestController;
-
-// @Controller('user')
-// class UserController {
-//
-//   @Post
-//   @Autentificate('user' | 'vendor' | 'admin')
-//   @Middleware([], [])
-//   @Validate((yup, req) => {
-//     const { body } = req;
-//
-//     const schema = {
-//       name: yup.string()
-//     }
-//   })
-//   create(req, res, next) {
-//
-//   }
-//
-//   @Get({ postfix: '/:file' })
-//  @Middleware([], []);
-//   @BeforeMiddlerware()
-//   @AfterMiddlerware(express.static('/fo'))
-//   get(){
-//
-//   }
-//
-//   @Post
-//   @InjectRouteController
-//   update!: DeleteController
-// }
