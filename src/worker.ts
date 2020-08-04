@@ -2,36 +2,40 @@
 import http from 'http';
 import _ from 'lodash';
 /* app */
-import app from './app';
+import init from './app';
 /* other */
 import logger from './logger';
 
-const server = http.createServer(app).listen(app.get('port'), app.get('host'));
+(async () => {
+  const app = await init();
 
-server.on('error', (error) => {
-  if (_.get(error, 'syscall') !== 'listen') throw error;
+  const server = http.createServer(app).listen(app.get('port'), app.get('host'));
 
-  const port = app.get('port');
-  const bind = _.isString(port) ? `Pipe ${port}` : `Port ${port}`;
+  server.on('error', (error) => {
+    if (_.get(error, 'syscall') !== 'listen') throw error;
 
-  // handle specific listen errors with friendly messages
-  switch (_.get(error, 'code')) {
-    case 'EACCES':
-      logger.error(`${bind} requires elevated privileges.`);
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      logger.error(`${bind} is already in use.`);
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-});
+    const port = app.get('port');
+    const bind = _.isString(port) ? `Pipe ${port}` : `Port ${port}`;
 
-server.on('listening', () => {
-  const addr = server.address();
-  const bind = _.isString(addr) ? `pipe ${addr}` : `port ${addr!.port}`;
+    // handle specific listen errors with friendly messages
+    switch (_.get(error, 'code')) {
+      case 'EACCES':
+        logger.error(`${bind} requires elevated privileges.`);
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        logger.error(`${bind} is already in use.`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
 
-  logger.info('Listening on ' + bind);
-});
+  server.on('listening', () => {
+    const addr = server.address();
+    const bind = _.isString(addr) ? `pipe ${addr}` : `port ${addr!.port}`;
+
+    logger.info('Listening on ' + bind);
+  });
+})();

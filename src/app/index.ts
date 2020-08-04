@@ -9,18 +9,26 @@ import ServiceController from './controllers';
 /*other*/
 import { config } from '../config';
 
-const app: express.Application = express();
+export default async function init(): Promise<express.Application> {
+  const app: express.Application = express();
 
-app.set('port', config.http.port);
-app.set('trust proxy', config.http.trustProxy);
+  app.set('port', config.http.port);
+  app.set('trust proxy', config.http.trustProxy);
 
-app.disable('x-powered-by');
+  app.disable('x-powered-by');
 
-app.use('/static/images', express.static(config.public.images, { maxAge: '7d' }));
-app.use('/static/files', express.static(config.public.files, { maxAge: '7d' }));
+  app.use('/static/images', express.static(config.public.images, { maxAge: '7d' }));
+  app.use('/static/files', express.static(config.public.files, { maxAge: '7d' }));
 
-app.use(expressLogger);
-app.use(protectionMiddleware());
+  app.use(expressLogger);
+  app.use(protectionMiddleware());
+
+  await ServiceController.setupControllers(app);
+
+  app.use(errorHandlers);
+
+  return app;
+}
 
 // import { Application } from 'express';
 // import app from '../index';
@@ -46,9 +54,3 @@ app.use(protectionMiddleware());
 // //     next(error);
 // //   }
 // // });
-
-ServiceController.setupControllers(app).then(() => {});
-
-app.use(errorHandlers);
-
-export default app;

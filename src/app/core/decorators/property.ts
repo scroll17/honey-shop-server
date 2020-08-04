@@ -1,7 +1,7 @@
 /*external modules*/
 /*@core*/
 import { InjectMethodDecorator, PropRoutesMetaKey, IPopRouteMap, HttpVerb } from './types';
-import RouteHandler from '../../RouteHandler';
+import RouteHandler from '../RouteHandler';
 /*other*/
 import { ServerError } from '../../error';
 

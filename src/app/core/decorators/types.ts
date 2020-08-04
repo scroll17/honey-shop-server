@@ -4,10 +4,12 @@ import * as Yup from 'yup';
 /*DB*/
 import { UserRole } from '../../../db/types/user';
 /*@core*/
+import { TArray } from '@honey/types';
 import { RouteContext } from '../index';
 
 /** CLASS */
 export const ClassMetaKey = Symbol('meta-class');
+export const ChildMetaKey = Symbol('child-meta-class');
 
 export interface IClass<T = any, A extends Array<any> = any[]> extends Function {
   new (...args: A): T;
@@ -15,10 +17,13 @@ export interface IClass<T = any, A extends Array<any> = any[]> extends Function 
 
 export interface IClassMetadata {
   prefix: string;
-  handlers: Array<{ prefix: string | string[]; handler: Handler }>;
-  errorHandlers: TErrorMiddleware[];
-  routerOptions: RouterOptions;
+  handlers?: Array<{ prefix: string | string[]; handler: Handler }>;
+  errorHandlers?: TErrorMiddleware[];
+  routerOptions?: RouterOptions;
+  children?: Map<string, IClass>;
 }
+
+export type ChildControllerDecorator = (controllers: TArray.Pairs<string, IClass>) => ClassDecorator;
 
 /** METHOD */
 export const RoutesMetaKey = Symbol('meta-routes');

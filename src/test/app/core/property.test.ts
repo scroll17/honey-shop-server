@@ -18,7 +18,7 @@ import {
 } from '../../../app/core/decorators';
 import { authenticateHandler } from '../../../app/core/utils';
 import { InjectRoute } from '../../../app/core/decorators/property';
-import RouteHandler, { IConfig, IMiddleware } from '../../../app/RouteHandler';
+import RouteHandler, { IConfig, IMiddleware } from '../../../app/core/RouteHandler';
 /*other*/
 import { ServerError } from '../../../app/error';
 import { Test } from '../../helpres/Test';

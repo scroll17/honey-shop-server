@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import * as yup from 'yup';
 import _ from 'lodash';
-import { Router, Application, RequestHandler } from 'express';
+import express, { IRouter, Application, RequestHandler } from 'express';
 /*DB*/
 import { DB, sql } from '../../db';
 import { User } from '../../db/types/user';
@@ -45,22 +45,14 @@ export function applyControllers<TController extends IClass>(
     }
 
     const { routerOptions = {} }: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, controller);
-    const expressRoute = Router(routerOptions);
+    const expressRoute = express.Router(routerOptions);
 
     const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute);
-    errorMiddleware.push(errorHandlers);
+    errorMiddleware.push(errorHandlers!);
 
     const paths: Set<string> = new Set();
-
-    const controllerRoutes = Reflect.getOwnMetadata(RoutesMetaKey, controller.prototype);
-    if (controllerRoutes.size > 0) {
-      expandRoutesMetadata(controller.prototype, expressRoute, paths);
-    }
-
-    const propControllersRoutes = Reflect.getOwnMetadata(PropRoutesMetaKey, controller.prototype);
-    if (propControllersRoutes.size > 0) {
-      expandInjectedPropertyMetadata(controller.prototype, expressRoute, paths);
-    }
+    expandRoutesMetadata(controller.prototype, expressRoute, paths);
+    expandInjectedPropertyMetadata(controller.prototype, expressRoute, paths);
 
     app.use(prefix, expressRoute);
   });
@@ -70,11 +62,15 @@ export function applyControllers<TController extends IClass>(
 
 function expandClassMetadata<TController extends IClass>(
   controller: TController,
-  Router: Router
+  Router: IRouter,
+  prefixRequired = true
 ): Pick<IClassMetadata, 'prefix' | 'errorHandlers'> {
-  const { handlers, errorHandlers, prefix }: IClassMetadata = Reflect.getMetadata(ClassMetaKey, controller);
+  const { handlers, errorHandlers, prefix, children }: IClassMetadata = Reflect.getMetadata(
+    ClassMetaKey,
+    controller
+  );
 
-  if (!prefix) {
+  if (prefixRequired && !prefix) {
     throw new ServerError(`"${controller.name}" not have prefix. Use @Controller.`);
   }
 
@@ -93,6 +89,25 @@ function expandClassMetadata<TController extends IClass>(
     });
   }
 
+  if (children) {
+    children.forEach((value, key) => {
+      if (!Reflect.hasOwnMetadata(ClassMetaKey, value)) {
+        throw new ServerError(`"${value.name}" not have metadata. Use class decorators.`);
+      }
+
+      const { routerOptions = {} }: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, value);
+      const expressRoute = express.Router(routerOptions);
+
+      expandClassMetadata(value, expressRoute, false);
+
+      const paths: Set<string> = new Set();
+      expandRoutesMetadata(value.prototype, expressRoute, paths);
+      expandInjectedPropertyMetadata(value.prototype, expressRoute, paths);
+
+      Router.use(key, expressRoute);
+    });
+  }
+
   return {
     prefix: prefix,
     errorHandlers: errorHandlers ?? [],
@@ -101,10 +116,13 @@ function expandClassMetadata<TController extends IClass>(
 
 function expandRoutesMetadata<TController extends IClass>(
   prototype: TController['prototype'],
-  Router: Router,
+  Router: IRouter,
   paths: Set<string>
 ) {
   const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, prototype);
+  // exit if there are no routes
+  if (routes.size === 0) return;
+
   const controllerName = prototype.constructor.name;
 
   /** check required properties */
@@ -175,10 +193,13 @@ function expandRoutesMetadata<TController extends IClass>(
 
 function expandInjectedPropertyMetadata<TController extends IClass>(
   prototype: TController['prototype'],
-  Router: Router,
+  Router: IRouter,
   paths: Set<string>
 ) {
   const routes: IPopRouteMap = Reflect.getOwnMetadata(PropRoutesMetaKey, prototype);
+  // exit if there are no routes
+  if (routes.size === 0) return;
+
   const controllerName = prototype.constructor.name;
 
   /** check uniqueness of paths */
@@ -199,10 +220,10 @@ function expandInjectedPropertyMetadata<TController extends IClass>(
 
     const handlerInstance = new handlerType();
 
-    const [beforeHandlers = [], afterHandlers = []] = handlerInstance.middleware ?? [];
+    const [beforeHandlers = [], afterHandlers = []] = handlerInstance.middleware;
     const targetHandlers: Array<RequestHandler> = [];
 
-    const { role: authRole, ctx: ctxKeys } = handlerInstance.config ?? {};
+    const { role: authRole, ctx: ctxKeys } = handlerInstance.config;
 
     targetHandlers.push((req, res, next) => {
       handlerInstance.validate({ yup, req, next });

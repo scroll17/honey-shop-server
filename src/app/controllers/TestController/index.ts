@@ -8,6 +8,7 @@ import {
   ActionOptions,
   Path,
   Validate,
+  ChildControllers,
 } from '../../core';
 import { Get, Post } from '../../core';
 
@@ -16,6 +17,7 @@ import express from 'express';
 import logger from '../../../logger';
 import { InjectRoute } from '../../core/decorators/property';
 import { Update } from './UpdateHandler';
+import { TestAuthController } from './child/TestAuthController';
 
 interface MethodsParam {
   findById: ActionOptions<'events' | 'sql', Record<string, never>, { id: string }>;
@@ -24,9 +26,11 @@ interface MethodsParam {
 
 @Controller('/test', { mergeParams: true })
 @ClassMiddleware([express.json({ strict: true })])
+@ChildControllers([['/auth', TestAuthController]])
 class TestController {
-  @Get({ postfix: '/:id', ctx: ['events', 'sql'] })
-  async findById({ ctx, req, res, next }: MethodsParam['findById']) {
+  @Get({ ctx: ['events', 'sql'] })
+  @Path('/:id')
+  async index({ ctx, req, res, next }: MethodsParam['findById']) {
     console.log('ctx => ', ctx);
 
     try {
@@ -98,7 +102,7 @@ class TestController {
   @Config({
     path: '/invite/:id',
     ctx: ['db'],
-    middleware: [[express.json()], [express.urlencoded()]],
+    middleware: [[express.json()], [express.urlencoded({ extended: false })]],
     role: 'user',
     validate: (yup, req) => {},
   })

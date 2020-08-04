@@ -1,6 +1,6 @@
 import express from 'express';
 
-import RouteHandler, { IConfig, IMiddleware } from '../../RouteHandler';
+import RouteHandler, { IConfig, IMiddleware } from '../../core/RouteHandler';
 import { ActionOptions, ValidateOptions } from '../../core/decorators';
 
 export class Update extends RouteHandler {

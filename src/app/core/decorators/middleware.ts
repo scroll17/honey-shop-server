@@ -16,7 +16,7 @@ export function ClassMiddleware(handlers: Array<Handler>): ClassDecorator {
 
     const handlerRecord = handlers.map((handler) => ({ prefix: '', handler }));
     if (Reflect.has(metadata, 'handlers')) {
-      metadata['handlers'] = metadata['handlers'].concat(handlerRecord);
+      metadata['handlers'] = metadata['handlers']!.concat(handlerRecord);
     } else {
       metadata['handlers'] = handlerRecord;
     }
@@ -30,7 +30,7 @@ export function SingleClassMiddleware(prefix: string | string[], handler: Handle
     const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
 
     if (Reflect.has(metadata, 'handlers')) {
-      metadata['handlers'] = [...metadata['handlers'], { prefix, handler }];
+      metadata['handlers'] = [...metadata['handlers']!, { prefix, handler }];
     } else {
       metadata['handlers'] = [{ prefix, handler }];
     }

@@ -1,7 +1,16 @@
 /*external modules*/
 import { RouterOptions } from 'express';
 /*@core*/
-import { ClassMetaKey, RoutesMetaKey, IClassMetadata, PropRoutesMetaKey } from './types';
+import {
+  ClassMetaKey,
+  RoutesMetaKey,
+  IClassMetadata,
+  PropRoutesMetaKey,
+  ChildControllerDecorator,
+  ChildMetaKey,
+} from './types';
+/*other*/
+import { ServerError } from '../../error';
 
 /**
  *    "target" => class constructor
@@ -20,12 +29,45 @@ export function Controller(prefix: string, options?: RouterOptions): ClassDecora
 
     Reflect.defineMetadata(ClassMetaKey, metadata, target);
 
-    if (!Reflect.hasOwnMetadata(RoutesMetaKey, target.prototype)) {
-      Reflect.defineMetadata(RoutesMetaKey, new Map(), target.prototype);
+    defineDefaultRoutes(target);
+  };
+}
+
+export const ChildControllers: ChildControllerDecorator = (controllers) => {
+  return (target) => {
+    const controllersMap = new Map(controllers);
+    controllersMap.forEach((value) => {
+      if (!Reflect.hasOwnMetadata(ChildMetaKey, value)) {
+        throw new ServerError(`Child controller must have use @Child.`);
+      }
+    });
+
+    const metadata: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, target) ?? {};
+
+    metadata['children'] = controllersMap;
+
+    Reflect.defineMetadata(ClassMetaKey, metadata, target);
+  };
+};
+
+export function Child(options?: RouterOptions): ClassDecorator {
+  return (target) => {
+    Reflect.defineMetadata(ChildMetaKey, options ?? {}, target);
+
+    if (!Reflect.hasOwnMetadata(ClassMetaKey, target)) {
+      Reflect.defineMetadata(ClassMetaKey, {}, target);
     }
 
-    if (!Reflect.hasOwnMetadata(PropRoutesMetaKey, target.prototype)) {
-      Reflect.defineMetadata(PropRoutesMetaKey, new Map(), target.prototype);
-    }
+    defineDefaultRoutes(target);
   };
+}
+
+function defineDefaultRoutes<T extends Function>(target: T) {
+  if (!Reflect.hasOwnMetadata(RoutesMetaKey, target.prototype)) {
+    Reflect.defineMetadata(RoutesMetaKey, new Map(), target.prototype);
+  }
+
+  if (!Reflect.hasOwnMetadata(PropRoutesMetaKey, target.prototype)) {
+    Reflect.defineMetadata(PropRoutesMetaKey, new Map(), target.prototype);
+  }
 }

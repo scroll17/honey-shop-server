@@ -1,7 +1,7 @@
 /*external modules*/
 import { Handler } from 'express';
 /*@core*/
-import { ActionOptions, IRouteHandlerConfig, ValidateOptions } from './core/decorators';
+import { ActionOptions, IRouteHandlerConfig, ValidateOptions } from './decorators';
 /*other*/
 
 type RecordUnknown = Record<string, unknown>;
