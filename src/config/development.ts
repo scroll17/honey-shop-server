@@ -11,10 +11,9 @@ export default {
   },
 
   postgres: {
-    disableDrop: false, // TODO _?
+    disableDrop: false,
     database: process.env.DB_NAME as string,
     user: process.env.DB_USERNAME as string,
     host: process.env.DB_HOST as string,
-    schema: 'public',
   },
 };

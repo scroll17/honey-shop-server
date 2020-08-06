@@ -25,9 +25,7 @@ export default {
     numFork: 1,
   },
 
-  // TODO _check options in doc
   postgres: {
-    disableDrop: true,
     schema: 'public',
     port: Number(process.env.DB_PORT),
     max: 5,
@@ -38,6 +36,7 @@ export default {
 
   http: {
     port: process.env.PORT || 3001,
+    // TODO _check
     cookiesConf: {
       httpOnly: true,
       signed: true,
@@ -45,6 +44,7 @@ export default {
       sameSite: false,
     },
     trustProxy: ['loopback', 'uniquelocal'],
+    // TODO _check
     csrf: {
       key: '_CS_r-f',
       maxAge: 60 * 60, // 1 hour

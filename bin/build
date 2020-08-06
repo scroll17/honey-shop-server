@@ -1,4 +1,5 @@
 #! /usr/bin/env sh
 
-npm run build/prod
+NODE_ENV=production
+npx tsc -p tsconfig.production.json
 cp ./src/config/honey-secrets.json ./dist/config

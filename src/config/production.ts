@@ -27,6 +27,7 @@ export default {
   },
 
   postgres: {
+    disableDrop: true,
     database: process.env.DB_NAME as string,
     user: process.env.DB_USERNAME as string,
     host: process.env.DB_HOST as string,

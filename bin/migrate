@@ -1,0 +1,13 @@
+#! /usr/bin/env node
+const [{ execMigrate }, { default: logger }] = require('./transpileTS')([
+  '../src/db/migrate/',
+  '../src/logger'
+]);
+
+logger.info('Preparing migrations…');
+execMigrate(process.argv[2], process.argv.slice(3))
+  .then(() => process.exit(0))
+  .catch(error => {
+    logger.fatal('migrate error: ', error);
+    process.exit(1);
+  });

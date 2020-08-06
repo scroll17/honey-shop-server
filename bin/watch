@@ -1,0 +1,4 @@
+path=$1
+
+NODE_ENV=development
+npx ts-node-dev --respawn --transpileOnly path
