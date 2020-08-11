@@ -1,10 +1,12 @@
 /*external modules*/
 import 'reflect-metadata';
+import path from "path";
+import fs from 'fs'
 import * as yup from 'yup';
 import _ from 'lodash';
 import express, { IRouter, Application, RequestHandler } from 'express';
 /*DB*/
-import { DB, sql } from '../../db';
+import { DB, index } from '../../db';
 import { User } from '../../db/types/user';
 /*@core*/
 import {
@@ -27,17 +29,29 @@ export * from './decorators';
 
 export interface RouteContext {
   db: DB;
-  sql: typeof sql;
+  sql: typeof index;
   user: User;
   events: TFunction.DelayedEvent[];
   resolveEvents: () => Promise<void | Error>;
 }
 
+interface IStatistic {
+  handlers: string;
+  uses?: Map<string, IStatistic>;
+  paths?: Set<string>;
+}
+
+let statistic: Map<string, IStatistic> | undefined;
+
 export function applyControllers<TController extends IClass>(
   app: Application,
-  controllers: Array<TController>
+  controllers: Array<TController>,
+  buildStatistic: boolean = false
 ): void {
   const errorMiddleware: Array<TArray.PossibleArray<TErrorMiddleware>> = [];
+
+  /** create stat */
+  if(buildStatistic) statistic = new Map()
 
   controllers.forEach((controller) => {
     if (!Reflect.hasOwnMetadata(ClassMetaKey, controller)) {
@@ -47,31 +61,57 @@ export function applyControllers<TController extends IClass>(
     const { routerOptions = {} }: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, controller);
     const expressRoute = express.Router(routerOptions);
 
-    const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute);
+    const { prefix, errorHandlers } = expandClassMetadata(controller, expressRoute, statistic);
     errorMiddleware.push(errorHandlers!);
 
     const paths: Set<string> = new Set();
     expandRoutesMetadata(controller.prototype, expressRoute, paths);
     expandInjectedPropertyMetadata(controller.prototype, expressRoute, paths);
 
+    if(statistic) {
+      const stat = statistic.get(prefix)!;
+      statistic.set(prefix, {
+        ...stat,
+        paths
+      })
+    }
+
     app.use(prefix, expressRoute);
   });
 
   errorMiddleware.flat().forEach((middleware) => app.use(middleware));
+
+  if(statistic) {
+    const mainDirPath = path.join(__dirname, '../../../statistic.json');
+    fs.writeFileSync(
+      mainDirPath,
+      JSON.stringify(parseStatistic(statistic), undefined, 2)
+    )
+
+    /** drop statistic */
+    statistic = undefined
+  }
 }
 
 function expandClassMetadata<TController extends IClass>(
   controller: TController,
   Router: IRouter,
-  prefixRequired = true
+  statistic?: Map<string, IStatistic>,
+  customPrefix?: string,
 ): Pick<IClassMetadata, 'prefix' | 'errorHandlers'> {
   const { handlers, errorHandlers, prefix, children }: IClassMetadata = Reflect.getMetadata(
     ClassMetaKey,
     controller
   );
 
-  if (prefixRequired && !prefix) {
+  if (!customPrefix && !prefix) {
     throw new ServerError(`"${controller.name}" not have prefix. Use @Controller.`);
+  }
+
+  if(statistic) {
+    statistic.set(prefix || customPrefix!, {
+      handlers: handlers?.map(({ handler}) => handler.name ?? '').join(',') ?? ''
+    })
   }
 
   if (handlers) {
@@ -90,6 +130,8 @@ function expandClassMetadata<TController extends IClass>(
   }
 
   if (children) {
+    let nestedStat = statistic ? new Map() : undefined;
+
     children.forEach((value, key) => {
       if (!Reflect.hasOwnMetadata(ClassMetaKey, value)) {
         throw new ServerError(`"${value.name}" not have metadata. Use class decorators.`);
@@ -98,14 +140,30 @@ function expandClassMetadata<TController extends IClass>(
       const { routerOptions = {} }: IClassMetadata = Reflect.getOwnMetadata(ClassMetaKey, value);
       const expressRoute = express.Router(routerOptions);
 
-      expandClassMetadata(value, expressRoute, false);
+      expandClassMetadata(value, expressRoute, nestedStat, key);
 
       const paths: Set<string> = new Set();
       expandRoutesMetadata(value.prototype, expressRoute, paths);
       expandInjectedPropertyMetadata(value.prototype, expressRoute, paths);
 
+      if(nestedStat) {
+        const stat = nestedStat.get(key)!;
+        nestedStat.set(key, {
+          ...stat,
+          paths
+        })
+      }
+
       Router.use(key, expressRoute);
     });
+
+    if(statistic) {
+      const stat = statistic.get(prefix || customPrefix!)!;
+      statistic.set(prefix || customPrefix!, {
+        ...stat,
+        uses: nestedStat
+      })
+    }
   }
 
   return {
@@ -163,6 +221,7 @@ function expandRoutesMetadata<TController extends IClass>(
 
     const path = _.get(routeConfig, SymCustomPath) ?? _.get(routeConfig, 'path');
     const method = routeConfig.requestMethod;
+
     const [beforeHandlers = [], afterHandlers = []] = routeConfig.middleware ?? [];
 
     const resLocals = {};
@@ -244,4 +303,34 @@ function expandInjectedPropertyMetadata<TController extends IClass>(
 
     Router[requestMethod](path, [...beforeHandlers, ...targetHandlers, ...afterHandlers]);
   });
+}
+
+
+function parseStatistic(statistic: Map<string, IStatistic>): Record<string, any> {
+  const objectStatistic: Record<string, any> = {};
+
+  statistic.forEach((value, key) => {
+    if(!_.isEmpty(value.handlers)) {
+      objectStatistic[key] = {
+        handlers: value.handlers
+      }
+    }
+    if(value.paths && value.paths.size) {
+      objectStatistic[key] = {
+        ...objectStatistic[key],
+        paths: [...value.paths]
+      }
+    }
+    if(value.uses && value.uses.size) {
+      objectStatistic[key] = {
+        ...objectStatistic[key],
+        paths: [
+          parseStatistic(value.uses),
+          ...(objectStatistic[key].paths ?? [])
+        ],
+      }
+    }
+  })
+
+  return objectStatistic
 }

@@ -44,9 +44,8 @@ export default {
       sameSite: false,
     },
     trustProxy: ['loopback', 'uniquelocal'],
-    // TODO _check
     csrf: {
-      key: '_CS_r-f',
+      key: 'csrf-token',
       maxAge: 60 * 60, // 1 hour
       httpOnly: true,
       sameSite: true,

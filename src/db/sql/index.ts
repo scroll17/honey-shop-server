@@ -1,7 +1,7 @@
 /*external modules*/
 import { isObject } from 'lodash';
 /*other*/
-import { config } from '../config';
+import { config } from '../../config';
 
 type WrappedValue<TValue> = { [key in symbol]: { value: TValue } };
 
@@ -23,10 +23,10 @@ export class SqlStatement {
 }
 
 export function withSchema(tableName: string): WrappedValue<string> {
-  return sql.raw(`"${schema}"."${tableName}"`);
+  return index.raw(`"${schema}"."${tableName}"`);
 }
 
-export function sql(strings: TemplateStringsArray, ...args: any[]): SqlStatement {
+export function index(strings: TemplateStringsArray, ...args: any[]): SqlStatement {
   let text = '';
   let paramIndex = 1;
   const values: any[] = [];
@@ -77,9 +77,9 @@ export function sql(strings: TemplateStringsArray, ...args: any[]): SqlStatement
   return new SqlStatement(text, values);
 }
 
-sql.raw = wrapValue(SQL_RAW_KEY);
-sql.batch = wrapValue(SQL_BATCH_KEY);
-sql.DEFAULT = wrapValue(SQL_DEFAULT_KEY)('DEFAULT');
+index.raw = wrapValue(SQL_RAW_KEY);
+index.batch = wrapValue(SQL_BATCH_KEY);
+index.DEFAULT = wrapValue(SQL_DEFAULT_KEY)('DEFAULT');
 
 const isDefault = <TObject>(value: TObject) => isWrapped(SQL_DEFAULT_KEY, value);
 const isRaw = <TObject>(value: TObject) => isWrapped(SQL_RAW_KEY, value);

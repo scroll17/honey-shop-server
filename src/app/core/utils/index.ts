@@ -33,7 +33,7 @@ export function createCtx(
     };
   }
   if (ctxKeys.has('sql')) {
-    ctx['sql'] = db.sql;
+    ctx['sql'] = db.index;
   }
   if (ctxKeys.has('db')) {
     ctx['db'] = db;

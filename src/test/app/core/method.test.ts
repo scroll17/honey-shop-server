@@ -5,7 +5,7 @@ import mock from 'mock-require';
 import originalExpress, { Express, Handler, RequestHandler, Router, RouterOptions } from 'express';
 /*DB*/
 import * as db from '../../../db';
-import { sql } from '../../../db';
+import { index } from '../../../db';
 /*@core*/
 import {
   Authenticate,
@@ -127,7 +127,7 @@ describe('src/app/core/core/method', () => {
       @Post()
       @Ctx(ctxKeys, 'sql')
       [methodName]({ ctx }: Record<string, any>) {
-        assert(_.isEqual(ctx, { sql, db }), 'Invalid route "ctx" object.');
+        assert(_.isEqual(ctx, { sql: index, db }), 'Invalid route "ctx" object.');
       }
     }
 
@@ -219,7 +219,7 @@ describe('src/app/core/core/method', () => {
       @Put()
       @Config(configOptions)
       [configOptions.path as string]({ ctx }: Record<string, any>) {
-        assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { sql, events: [] }), 'Invalid route "ctx" object.');
+        assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { sql: index, events: [] }), 'Invalid route "ctx" object.');
 
         assert(
           _.isEqual(_.keys(ctx).sort(), ['sql', 'events', 'resolveEvents'].sort()),

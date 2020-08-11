@@ -1,7 +1,7 @@
 /* external modules */
 import { Pool, PoolClient, QueryConfig } from 'pg';
 /*DB*/
-import { sql } from './sql';
+import { index } from './sql';
 /* other */
 import { config } from '../config';
 import logger from '../logger';
@@ -57,11 +57,11 @@ async function getClientTransaction<TReturn = undefined>(cb: GetClientCallback<T
 
 export interface DB {
   pool: Pool;
-  sql: typeof sql;
+  sql: typeof index;
   query: typeof query;
   getClient: typeof getClient;
   getClientTransaction: typeof getClientTransaction;
   wrapTransaction: typeof wrapTransaction;
 }
 
-export { pool, query, getClient, getClientTransaction, wrapTransaction, sql };
+export { pool, query, getClient, getClientTransaction, wrapTransaction, index };

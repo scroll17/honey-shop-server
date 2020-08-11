@@ -6,7 +6,7 @@ export const csrfErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return next(err);
   } else {
     // TODO: update reason
-    return res.status(403).json({ reason: 'csrf' });
+    return res.status(403).json({ type: 'error', reason: 'csrf' });
   }
 };
 

@@ -6,7 +6,7 @@ import mock from 'mock-require';
 import originalExpress, { Express, Handler, RequestHandler, Router, RouterOptions } from 'express';
 /*DB*/
 import * as db from '../../../db';
-import { sql } from '../../../db';
+import { index } from '../../../db';
 /*@core*/
 import {
   ActionOptions,
@@ -39,7 +39,7 @@ export class Update extends RouteHandler {
   };
 
   async action({ ctx }: ActionOptions<any, any>): Promise<void | Error> {
-    assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { db, sql, events: [] }), 'Invalid route "ctx" object.');
+    assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { db, sql: index, events: [] }), 'Invalid route "ctx" object.');
 
     assert(
       _.isEqual(_.keys(ctx).sort(), ['db', 'sql', 'events', 'resolveEvents'].sort()),

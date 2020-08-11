@@ -5,10 +5,12 @@ import { Application } from 'express';
 /*@core*/
 import { IClass } from '../core/decorators';
 import { applyControllers } from '../core';
-/*controllers*/
+/*other*/
+import {ServerError} from "../error";
 
 export default class ServiceController {
   private static controllers: Array<IClass> = [];
+  public static buildStatistic = false;
 
   private static async load(): Promise<Record<string, unknown>[]> {
     return new Promise(async (resolve) => {
@@ -16,11 +18,25 @@ export default class ServiceController {
 
       Promise.all(
         files.map(async (fileName) => {
-          if (!fileName.startsWith('index')) {
-            const fullPath = path.join(__dirname, fileName);
-            const { default: controller } = await import(fullPath);
+          const fullPath = path.join(__dirname, fileName);
 
-            ServiceController.registerController(controller);
+          if (fs.statSync(fullPath).isDirectory()) {
+            const controllerPath = path.join(fullPath, 'index.ts');
+            const pathExist = fs.existsSync(controllerPath);
+
+            if(pathExist) {
+              const { default: controller } = await import(controllerPath);
+
+              if(!controller) {
+                throw new ServerError(`${controllerPath} not exported class by default.`)
+              }
+
+              ServiceController.registerController(controller);
+            } else {
+              throw new ServerError(`index file by path: "${fullPath}" not exist.`)
+            }
+          } else {
+            return
           }
         })
       );
@@ -33,8 +49,12 @@ export default class ServiceController {
     this.controllers.push(controller);
   }
 
+  static createStatistic(status: boolean) {
+    this.buildStatistic = status
+  }
+
   static async setupControllers(app: Application) {
     await this.load();
-    applyControllers(app, this.controllers);
+    applyControllers(app, this.controllers, this.buildStatistic);
   }
 }

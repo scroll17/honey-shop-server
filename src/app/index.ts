@@ -23,6 +23,8 @@ export default async function init(): Promise<express.Application> {
   app.use(expressLogger);
   app.use(protectionMiddleware());
 
+  if(config.name === 'development') ServiceController.createStatistic(true);
+
   await ServiceController.setupControllers(app);
 
   app.use(errorHandlers);
@@ -36,10 +38,10 @@ export default async function init(): Promise<express.Application> {
 // export function applyControllers(app: Application, controllers: Array<any>) {}
 //
 // // TODO
-// // app.get('/', (req, res) => {
-// //   res.send({ csrfToken: req.csrfToken() });
-// // });
-// //
+// app.get('/', (req, res) => {
+//   res.send({ csrfToken: req.csrfToken() });
+// });
+
 // app.post('/post', (req, res) => {
 //   console.log('headers => ', req.headers)
 //   res.send({ type: 'post' });
