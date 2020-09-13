@@ -1,12 +1,12 @@
 import { run } from '../migrate';
-import {ROLE_TABLE, UserRole} from "../types/role";
-import {createEnum} from "../sql/utils";
-import {USER_TABLE} from "../types/user";
+import { ROLE_TABLE, UserRole } from '../types/role';
+import { createEnum } from '../sql/utils';
+import { USER_TABLE } from '../types/user';
 
 // Apply changes
 module.exports.up = run(async (db, schema) => {
   const roles = createEnum(UserRole);
-  await db.query(`CREATE TYPE "${schema}".USER_ROLE AS ENUM(${roles})`)
+  await db.query(`CREATE TYPE "${schema}".USER_ROLE AS ENUM(${roles})`);
 
   await db.query(`
     CREATE TABLE "${schema}"."${ROLE_TABLE}" (

@@ -15,6 +15,7 @@ export interface User {
   email: string;
   emailConfirmed: boolean;
 
+  // auth
   failedLoginAttempts: number;
   locked: boolean;
   deleted: boolean;

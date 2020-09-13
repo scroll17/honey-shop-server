@@ -6,7 +6,7 @@ import mock from 'mock-require';
 import originalExpress, { Express, Handler, RequestHandler, Router, RouterOptions } from 'express';
 /*DB*/
 import * as db from '../../../db';
-import { index } from '../../../db';
+import { sql } from '../../../db';
 /*@core*/
 import {
   ActionOptions,
@@ -16,7 +16,7 @@ import {
   Path,
   ValidateOptions,
 } from '../../../app/core/decorators';
-import { authenticateHandler } from '../../../app/core/utils';
+import { authorizationHandler } from '../../../app/core/utils';
 import { InjectRoute } from '../../../app/core/decorators/property';
 import RouteHandler, { IConfig, IMiddleware } from '../../../app/core/RouteHandler';
 /*other*/
@@ -39,7 +39,10 @@ export class Update extends RouteHandler {
   };
 
   async action({ ctx }: ActionOptions<any, any>): Promise<void | Error> {
-    assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { db, sql: index, events: [] }), 'Invalid route "ctx" object.');
+    assert(
+      _.isEqual(_.omit(ctx, 'resolveEvents'), { db, sql: sql, events: [] }),
+      'Invalid route "ctx" object.'
+    );
 
     assert(
       _.isEqual(_.keys(ctx).sort(), ['db', 'sql', 'events', 'resolveEvents'].sort()),
@@ -130,7 +133,7 @@ describe('src/app/core/core/property', () => {
     const handlerInstance = new Update();
 
     assert(beforeHandler === handlerInstance.middleware![0][0], 'Invalid beforeHandler handler.');
-    assert(authenticateHandler === authHandler, 'Invalid authenticate handler.');
+    assert(authorizationHandler === authHandler, 'Invalid authorization handler.');
     assert(afterHandler === handlerInstance.middleware![1][0], 'Invalid afterHandler handler.');
 
     valHandler({}, {}, () => {});

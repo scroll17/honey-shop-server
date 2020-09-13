@@ -1,12 +1,12 @@
 /*external modules*/
 import 'reflect-metadata';
-import path from "path";
-import fs from 'fs'
+import path from 'path';
+import fs from 'fs';
 import * as yup from 'yup';
 import _ from 'lodash';
 import express, { IRouter, Application, RequestHandler } from 'express';
 /*DB*/
-import { DB, index } from '../../db';
+import { DB, sql } from '../../db';
 import { User } from '../../db/types/user';
 /*@core*/
 import {
@@ -20,7 +20,7 @@ import {
   IRouteMap,
   IPopRouteMap,
 } from './decorators';
-import { authenticateHandler, createCtx, setResLocals, validateHandler } from './utils';
+import { authorizationHandler, createCtx, setResLocals, validateHandler } from './utils';
 /*other*/
 import { TArray, TFunction } from '@honey/types';
 import { ServerError } from '../error';
@@ -28,8 +28,8 @@ import { ServerError } from '../error';
 export * from './decorators';
 
 export interface RouteContext {
-  db: DB;
-  sql: typeof index;
+  db: Omit<DB, 'sql'>;
+  sql: typeof sql;
   user: User;
   events: TFunction.DelayedEvent[];
   resolveEvents: () => Promise<void | Error>;
@@ -46,12 +46,12 @@ let statistic: Map<string, IStatistic> | undefined;
 export function applyControllers<TController extends IClass>(
   app: Application,
   controllers: Array<TController>,
-  buildStatistic: boolean = false
+  buildStatistic = false
 ): void {
   const errorMiddleware: Array<TArray.PossibleArray<TErrorMiddleware>> = [];
 
-  /** create stat */
-  if(buildStatistic) statistic = new Map()
+  /** create statistic */
+  if (buildStatistic) statistic = new Map();
 
   controllers.forEach((controller) => {
     if (!Reflect.hasOwnMetadata(ClassMetaKey, controller)) {
@@ -68,12 +68,12 @@ export function applyControllers<TController extends IClass>(
     expandRoutesMetadata(controller.prototype, expressRoute, paths);
     expandInjectedPropertyMetadata(controller.prototype, expressRoute, paths);
 
-    if(statistic) {
+    if (statistic) {
       const stat = statistic.get(prefix)!;
       statistic.set(prefix, {
         ...stat,
-        paths
-      })
+        paths,
+      });
     }
 
     app.use(prefix, expressRoute);
@@ -81,15 +81,11 @@ export function applyControllers<TController extends IClass>(
 
   errorMiddleware.flat().forEach((middleware) => app.use(middleware));
 
-  if(statistic) {
+  /** write statistic */
+  if (statistic) {
     const mainDirPath = path.join(__dirname, '../../../statistic.json');
-    fs.writeFileSync(
-      mainDirPath,
-      JSON.stringify(parseStatistic(statistic), undefined, 2)
-    )
 
-    /** drop statistic */
-    statistic = undefined
+    fs.writeFileSync(mainDirPath, JSON.stringify(parseStatistic(statistic), undefined, 2));
   }
 }
 
@@ -97,7 +93,7 @@ function expandClassMetadata<TController extends IClass>(
   controller: TController,
   Router: IRouter,
   statistic?: Map<string, IStatistic>,
-  customPrefix?: string,
+  customPrefix?: string
 ): Pick<IClassMetadata, 'prefix' | 'errorHandlers'> {
   const { handlers, errorHandlers, prefix, children }: IClassMetadata = Reflect.getMetadata(
     ClassMetaKey,
@@ -108,10 +104,10 @@ function expandClassMetadata<TController extends IClass>(
     throw new ServerError(`"${controller.name}" not have prefix. Use @Controller.`);
   }
 
-  if(statistic) {
+  if (statistic) {
     statistic.set(prefix || customPrefix!, {
-      handlers: handlers?.map(({ handler}) => handler.name ?? '').join(',') ?? ''
-    })
+      handlers: handlers?.map(({ handler }) => handler.name ?? '').join(',') ?? '',
+    });
   }
 
   if (handlers) {
@@ -130,7 +126,7 @@ function expandClassMetadata<TController extends IClass>(
   }
 
   if (children) {
-    let nestedStat = statistic ? new Map() : undefined;
+    const nestedStat = statistic ? new Map() : undefined;
 
     children.forEach((value, key) => {
       if (!Reflect.hasOwnMetadata(ClassMetaKey, value)) {
@@ -146,23 +142,23 @@ function expandClassMetadata<TController extends IClass>(
       expandRoutesMetadata(value.prototype, expressRoute, paths);
       expandInjectedPropertyMetadata(value.prototype, expressRoute, paths);
 
-      if(nestedStat) {
+      if (nestedStat) {
         const stat = nestedStat.get(key)!;
         nestedStat.set(key, {
           ...stat,
-          paths
-        })
+          paths,
+        });
       }
 
       Router.use(key, expressRoute);
     });
 
-    if(statistic) {
+    if (statistic) {
       const stat = statistic.get(prefix || customPrefix!)!;
       statistic.set(prefix || customPrefix!, {
         ...stat,
-        uses: nestedStat
-      })
+        uses: nestedStat,
+      });
     }
   }
 
@@ -237,7 +233,7 @@ function expandRoutesMetadata<TController extends IClass>(
         targetHandlers.push(validateHandler);
       }
       if (_.has(resLocals, 'authRole')) {
-        targetHandlers.push(authenticateHandler);
+        targetHandlers.push(authorizationHandler);
       }
     }
 
@@ -293,7 +289,7 @@ function expandInjectedPropertyMetadata<TController extends IClass>(
       _.set(resLocals, 'authRole', authRole);
 
       targetHandlers.push(setResLocals(resLocals));
-      targetHandlers.push(authenticateHandler);
+      targetHandlers.push(authorizationHandler);
     }
 
     targetHandlers.push(async (req, res, next) => {
@@ -305,32 +301,28 @@ function expandInjectedPropertyMetadata<TController extends IClass>(
   });
 }
 
-
 function parseStatistic(statistic: Map<string, IStatistic>): Record<string, any> {
   const objectStatistic: Record<string, any> = {};
 
   statistic.forEach((value, key) => {
-    if(!_.isEmpty(value.handlers)) {
+    if (!_.isEmpty(value.handlers)) {
       objectStatistic[key] = {
-        handlers: value.handlers
-      }
+        handlers: value.handlers,
+      };
     }
-    if(value.paths && value.paths.size) {
-      objectStatistic[key] = {
-        ...objectStatistic[key],
-        paths: [...value.paths]
-      }
-    }
-    if(value.uses && value.uses.size) {
+    if (value.paths && value.paths.size) {
       objectStatistic[key] = {
         ...objectStatistic[key],
-        paths: [
-          parseStatistic(value.uses),
-          ...(objectStatistic[key].paths ?? [])
-        ],
-      }
+        paths: [...value.paths],
+      };
     }
-  })
+    if (value.uses && value.uses.size) {
+      objectStatistic[key] = {
+        ...objectStatistic[key],
+        paths: [parseStatistic(value.uses), ...(objectStatistic[key].paths ?? [])],
+      };
+    }
+  });
 
-  return objectStatistic
+  return objectStatistic;
 }

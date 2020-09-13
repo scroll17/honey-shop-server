@@ -6,7 +6,7 @@ export const $RoleTable = withSchema(ROLE_TABLE);
 export enum UserRole {
   Buyer = 'Buyer',
   Vendor = 'Vendor',
-  Admin = 'Admin'
+  Admin = 'Admin',
 }
 
 export interface Role<TData = any> {

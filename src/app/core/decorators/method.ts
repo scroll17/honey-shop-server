@@ -2,7 +2,7 @@
 import _ from 'lodash';
 import { Request } from 'express';
 /*DB*/
-import { UserRole } from '../../../db/types/user';
+import { UserRole } from '../../../db/types/role';
 /*@core*/
 import {
   CtxMethodDecorator,
@@ -28,7 +28,7 @@ import { ServerError } from '../../error';
  * */
 
 /**
- *  middle -> Validate -> Authenticate -> currentMethod(?createCtx?) -> middle
+ *  middle -> Validate -> Authorization -> currentMethod(?createCtx?) -> middle
  * */
 
 export const Get: HttpMethodDecorator = (options) => {
@@ -102,7 +102,7 @@ export const Config = (config: IRouteConfig): MethodDecorator => {
   };
 };
 
-export const Authenticate = (role: UserRole): MethodDecorator => {
+export const Authorization = (role: UserRole): MethodDecorator => {
   return (target, propertyKey) => {
     const routes: IRouteMap = Reflect.getOwnMetadata(RoutesMetaKey, target) ?? new Map();
 

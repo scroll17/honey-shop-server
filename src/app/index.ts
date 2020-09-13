@@ -23,7 +23,7 @@ export default async function init(): Promise<express.Application> {
   app.use(expressLogger);
   app.use(protectionMiddleware());
 
-  if(config.name === 'development') ServiceController.createStatistic(true);
+  if (config.name === 'development') ServiceController.createStatistic(true);
 
   await ServiceController.setupControllers(app);
 

@@ -1,3 +1,1 @@
-export namespace BasicAuth {
-
-}
+export namespace BasicAuth {}

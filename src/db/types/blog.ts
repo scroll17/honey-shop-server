@@ -1,11 +1,11 @@
-import {withSchema} from "../sql";
+import { withSchema } from '../sql';
 
 export const BLOG_TABLE = 'Blog';
 export const $BlogTable = withSchema(BLOG_TABLE);
 
 enum BlogContent {
   TEXT = 'text',
-  IMG = 'img'
+  IMG = 'img',
 }
 
 // TODO: is feature

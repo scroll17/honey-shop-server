@@ -23,10 +23,10 @@ export class SqlStatement {
 }
 
 export function withSchema(tableName: string): WrappedValue<string> {
-  return index.raw(`"${schema}"."${tableName}"`);
+  return sql.raw(`"${schema}"."${tableName}"`);
 }
 
-export function index(strings: TemplateStringsArray, ...args: any[]): SqlStatement {
+export function sql(strings: TemplateStringsArray, ...args: any[]): SqlStatement {
   let text = '';
   let paramIndex = 1;
   const values: any[] = [];
@@ -77,9 +77,9 @@ export function index(strings: TemplateStringsArray, ...args: any[]): SqlStateme
   return new SqlStatement(text, values);
 }
 
-index.raw = wrapValue(SQL_RAW_KEY);
-index.batch = wrapValue(SQL_BATCH_KEY);
-index.DEFAULT = wrapValue(SQL_DEFAULT_KEY)('DEFAULT');
+sql.raw = wrapValue(SQL_RAW_KEY);
+sql.batch = wrapValue(SQL_BATCH_KEY);
+sql.DEFAULT = wrapValue(SQL_DEFAULT_KEY)('DEFAULT');
 
 const isDefault = <TObject>(value: TObject) => isWrapped(SQL_DEFAULT_KEY, value);
 const isRaw = <TObject>(value: TObject) => isWrapped(SQL_RAW_KEY, value);

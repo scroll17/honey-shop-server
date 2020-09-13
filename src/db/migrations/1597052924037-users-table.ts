@@ -1,5 +1,5 @@
 import { run } from '../migrate';
-import {USER_TABLE} from "../types/user";
+import { USER_TABLE } from '../types/user';
 
 // Apply changes
 module.exports.up = run(async (db, schema) => {

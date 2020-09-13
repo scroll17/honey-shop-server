@@ -5,10 +5,10 @@ import mock from 'mock-require';
 import originalExpress, { Express, Handler, RequestHandler, Router, RouterOptions } from 'express';
 /*DB*/
 import * as db from '../../../db';
-import { index } from '../../../db';
+import { sql } from '../../../db';
 /*@core*/
 import {
-  Authenticate,
+  Authorization,
   Config,
   Controller,
   Ctx,
@@ -23,7 +23,7 @@ import {
   Validate,
   ValidateCallback,
 } from '../../../app/core/decorators';
-import { authenticateHandler, validateHandler } from '../../../app/core/utils';
+import { authorizationHandler, validateHandler } from '../../../app/core/utils';
 /*other*/
 import { ServerError } from '../../../app/error';
 import { Test } from '../../helpres/Test';
@@ -127,7 +127,7 @@ describe('src/app/core/core/method', () => {
       @Post()
       @Ctx(ctxKeys, 'sql')
       [methodName]({ ctx }: Record<string, any>) {
-        assert(_.isEqual(ctx, { sql: index, db }), 'Invalid route "ctx" object.');
+        assert(_.isEqual(ctx, { sql: sql, db }), 'Invalid route "ctx" object.');
       }
     }
 
@@ -160,7 +160,7 @@ describe('src/app/core/core/method', () => {
     assert(RouterRecord.has(path), 'Decorator not use custom path for route.');
   });
 
-  it('@Authenticate / @Validate', () => {
+  it('@Authorization / @Validate', () => {
     const path = '/delete/:id';
 
     const authRole = 'vendor';
@@ -171,7 +171,7 @@ describe('src/app/core/core/method', () => {
     @Controller('/test')
     class TestController {
       @Delete()
-      @Authenticate(authRole)
+      @Authorization(authRole)
       @Validate(validateFunc)
       [path]() {}
     }
@@ -186,7 +186,7 @@ describe('src/app/core/core/method', () => {
     } = RouterRecord.get(path);
     assert(method === 'delete', 'Invalid route method.');
 
-    assert(authenticateHandler === authHandler, 'Invalid authenticate handler.');
+    assert(authorizationHandler === authHandler, 'Invalid authorization handler.');
     assert(validateHandler === valHandler, 'Invalid validate handler.');
 
     let callNext = false;
@@ -219,7 +219,10 @@ describe('src/app/core/core/method', () => {
       @Put()
       @Config(configOptions)
       [configOptions.path as string]({ ctx }: Record<string, any>) {
-        assert(_.isEqual(_.omit(ctx, 'resolveEvents'), { sql: index, events: [] }), 'Invalid route "ctx" object.');
+        assert(
+          _.isEqual(_.omit(ctx, 'resolveEvents'), { sql: sql, events: [] }),
+          'Invalid route "ctx" object.'
+        );
 
         assert(
           _.isEqual(_.keys(ctx).sort(), ['sql', 'events', 'resolveEvents'].sort()),
@@ -246,7 +249,7 @@ describe('src/app/core/core/method', () => {
     assert(method === 'put', 'Invalid route method.');
 
     assert(beforeHandler === configOptions.middleware![0][0], 'Invalid beforeHandler handler.');
-    assert(authenticateHandler === authHandler, 'Invalid authenticate handler.');
+    assert(authorizationHandler === authHandler, 'Invalid authorization handler.');
     assert(validateHandler === valHandler, 'Invalid validate handler.');
     assert(afterHandler === configOptions.middleware![1][0], 'Invalid afterHandler handler.');
 

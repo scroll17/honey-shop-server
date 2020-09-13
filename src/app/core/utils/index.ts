@@ -25,6 +25,8 @@ export function createCtx(
   const ctxKeys = new Set(keys);
 
   const ctx: Partial<RouteContext> = {};
+
+  // events
   if (ctxKeys.has('events')) {
     ctx['events'] = [];
     ctx['resolveEvents'] = async () => {
@@ -32,12 +34,18 @@ export function createCtx(
       await Promise.all(ctx.events.map((event) => event()));
     };
   }
+
+  // sql
   if (ctxKeys.has('sql')) {
-    ctx['sql'] = db.index;
+    ctx['sql'] = db.sql;
   }
+
+  // db
   if (ctxKeys.has('db')) {
     ctx['db'] = db;
   }
+
+  // user
   if (ctxKeys.has('user')) {
     if (_.has(res.locals[SymResLocals], 'authUser')) {
     } else {
@@ -61,7 +69,7 @@ export const validateHandler: RequestHandler = (req, res, next) => {
   }
 };
 
-export const authenticateHandler: RequestHandler = (req, res, next) => {
+export const authorizationHandler: RequestHandler = (req, res, next) => {
   const { authRole }: Required<Pick<IRouteMetadata, 'authRole'>> = res.locals[SymResLocals];
 
   try {

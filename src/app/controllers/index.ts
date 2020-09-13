@@ -6,7 +6,7 @@ import { Application } from 'express';
 import { IClass } from '../core/decorators';
 import { applyControllers } from '../core';
 /*other*/
-import {ServerError} from "../error";
+import { ServerError } from '../error';
 
 export default class ServiceController {
   private static controllers: Array<IClass> = [];
@@ -24,19 +24,19 @@ export default class ServiceController {
             const controllerPath = path.join(fullPath, 'index.ts');
             const pathExist = fs.existsSync(controllerPath);
 
-            if(pathExist) {
+            if (pathExist) {
               const { default: controller } = await import(controllerPath);
 
-              if(!controller) {
-                throw new ServerError(`${controllerPath} not exported class by default.`)
+              if (!controller) {
+                throw new ServerError(`${controllerPath} not exported class by default.`);
               }
 
               ServiceController.registerController(controller);
             } else {
-              throw new ServerError(`index file by path: "${fullPath}" not exist.`)
+              throw new ServerError(`index file by path: "${fullPath}" not exist.`);
             }
           } else {
-            return
+            return;
           }
         })
       );
@@ -50,7 +50,7 @@ export default class ServiceController {
   }
 
   static createStatistic(status: boolean) {
-    this.buildStatistic = status
+    this.buildStatistic = status;
   }
 
   static async setupControllers(app: Application) {

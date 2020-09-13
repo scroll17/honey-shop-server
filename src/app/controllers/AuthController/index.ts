@@ -1,24 +1,23 @@
 /*external modules*/
-import 'reflect-metadata'
+import 'reflect-metadata';
 import express from 'express';
 /*@core*/
-import {ClassMiddleware, Controller} from "../../core/decorators";
-import {InjectRoute} from "../../core/decorators/property";
+import { ClassMiddleware, Controller } from '../../core/decorators';
+import { InjectRoute } from '../../core/decorators/property';
 /*handlers*/
-import {Init} from "./handlers/init";
+import { Init } from './handlers/init';
 /*other*/
 
 @Controller('/auth')
 @ClassMiddleware([express.json()])
 class AuthController {
   @InjectRoute('post', '/init')
-  init!: Init
+  init!: Init;
 
-// login
-// logout
-// signup
-// refresh
-
+  // login
+  // logout
+  // signup
+  // refresh
 }
 
-export default AuthController
+export default AuthController;

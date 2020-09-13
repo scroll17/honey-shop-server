@@ -1,37 +1,35 @@
 /*external modules*/
 import express from 'express';
 /*@core*/
-import RouteHandler, {IConfig, IMiddleware} from "../../../core/RouteHandler";
-import {ActionOptions, ValidateOptions} from "../../../core/decorators";
+import RouteHandler, { IConfig, IMiddleware } from '../../../core/RouteHandler';
+import { ActionOptions, ValidateOptions } from '../../../core/decorators';
 /*middleware*/
-import { custCsurf } from "../../../middleware/csurf";
-import cookieParser from "../../../middleware/cookieParser";
+import cookieParser from '../../../middleware/cookieParser';
 /*other*/
 
 export class Init extends RouteHandler {
-  middleware: IMiddleware = [
-    [cookieParser, custCsurf(['post'])],
-    []
-  ];
+  middleware: IMiddleware = [[cookieParser], []];
   config: IConfig = {
-    ctx: ['db', 'sql', 'events']
+    ctx: ['db', 'sql', 'events'],
   };
 
   async validate({ yup, req, next }: ValidateOptions<any>): Promise<void | Error> {
-    try {
-      next()
-    } catch (error) {
+    console.log('COOKIE => ', req.cookies);
 
-    }
+    try {
+      next();
+    } catch (error) {}
   }
 
   async action({ ctx, req, res, next }: ActionOptions<any, any>): Promise<void | Error> {
     try {
-      const csrf = req.csrfToken();
+      //const csrf = req.csrfToken();
 
-      res.send({ csrf })
-    } catch (error) {
+      res.cookie('test_g', 'val', { maxAge: 1000 });
 
-    }
+      res.send({});
+
+      //res.send({ csrf });
+    } catch (error) {}
   }
 }
